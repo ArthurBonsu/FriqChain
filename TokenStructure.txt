@@ -1,0 +1,24 @@
+core/token/
+├── standard/
+│   ├── TokenStandard.java         // Base interface for all tokens
+│   ├── ERC20Standard.java         // ERC20 token interface
+│   └── ERC721Standard.java        // NFT token interface (future expansion)
+├── impl/
+│   ├── BaseToken.java             // Abstract token implementation
+│   ├── ERC20Token.java            // Standard ERC20 implementation
+│   └── MintableToken.java         // ERC20 with minting capability
+├── registry/
+│   ├── TokenRegistry.java         // Global token registry
+│   └── TokenDeployer.java         // Helper for token deployment
+├── transfer/
+│   ├── TokenTransfer.java         // Token transfer logic
+│   └── TokenTransferProcessor.java // Processes token transactions
+├── event/
+│   ├── TokenEvent.java            // Token event definitions
+│   └── TokenEventEmitter.java     // Event emission utilities
+├── state/
+│   ├── TokenState.java            // Token-specific state management
+│   └── TokenBalanceState.java     // Balance tracking
+└── util/
+    ├── TokenBuilder.java          // Fluent API for token creation
+    └── TokenAddress.java          // Token address utilities

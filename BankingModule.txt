@@ -1,0 +1,102 @@
+app/src/main/java/org/example/app/
+├── core/
+│   ├── blockchain/ (existing with enhancements)
+│   │   ├── transaction/
+│   │   │   ├── TokenBankTransaction.java
+│   │   │   ├── BankSettlementTransaction.java
+│   │   │   ├── BankRegistrationTransaction.java
+│   │   │   ├── CurrencyExchangeTransaction.java
+│   │   │   └── P2PTransferTransaction.java (new)
+│   │   ├── wallet/
+│   │   │   ├── BankVaultWallet.java
+│   │   │   ├── TokenBankUserWallet.java
+│   │   │   ├── LiquidityPool.java
+│   │   │   ├── CitizenWallet.java (new)
+│   │   │   ├── MerchantWallet.java (new)
+│   │   │   ├── GovernmentTreasuryWallet.java (new)
+│   │   │   └── EmergencyExitWallet.java (new)
+│   │   ├── consensus/
+│   │   │   ├── TokenBankTransactionValidator.java
+│   │   │   ├── FairWeightingValidator.java
+│   │   │   ├── BankRegistrationValidator.java
+│   │   │   ├── AntiManipulationValidator.java (new)
+│   │   │   └── P2PBridgeValidator.java (new)
+│   │   └── block/
+│   │       ├── BlockchainState.java
+│   │       └── SettlementRecord.java
+│   │
+│   └── banking/ (new module)
+│       ├── registration/
+│       │   ├── BankRegistrationContract.java
+│       │   ├── RegulatorApprovalRegistry.java
+│       │   └── NodeBankVerifier.java
+│       │
+│       ├── bridge/
+│       │   ├── FiatTokenGateway.java
+│       │   ├── BankAPIEncryptedChannel.java
+│       │   ├── ProofOfFundsValidator.java
+│       │   └── SettlementReconciliation.java
+│       │
+│       ├── tokenization/
+│       │   ├── NationalCurrencyToken.java
+│       │   ├── CommodityBackedToken.java
+│       │   ├── AfricanStableUnitToken.java
+│       │   ├── ExchangeRateOracle.java
+│       │   └── AntiManipulationController.java
+│       │
+│       ├── independence/
+│       │   ├── DirectWithdrawProtocol.java
+│       │   ├── P2PBridgeContract.java
+│       │   ├── EmergencyExitWallet.java
+│       │   └── OfflineSettlementTech.java
+│       │
+│       ├── compliance/
+│       │   ├── KYCPrivacyLayer.java
+│       │   ├── AMLRiskEngine.java
+│       │   └── AuditZKProofs.java
+│       │
+│       ├── network/
+│       │   ├── LiquidityPoolRegistry.java
+│       │   ├── DecentralizedFXMatcher.java
+│       │   └── CrossBorderBridge.java
+│       │
+│       ├── wallet/
+│       │   ├── BankWallet.java
+│       │   ├── CitizenWallet.java
+│       │   ├── MerchantWallet.java
+│       │   └── GovernmentTreasuryWallet.java
+│       │
+│       ├── governance/
+│       │   ├── VotingDAO.java
+│       │   ├── FairRateAlgorithmConfig.java
+│       │   └── EconomicPolicyRules.java
+│       │
+│       └── blockchain/ (integration layer)
+│           ├── BlockchainBridge.java
+│           ├── OnChainStateManager.java
+│           ├── TransactionBroadcaster.java
+│           ├── ConfirmationMonitor.java
+│           ├── SettlementProcessor.java
+│           └── BlockchainEventListener.java
+│
+├── ui/
+│   ├── banking/
+│   │   ├── dashboard/
+│   │   │   ├── BankingDashboardController.java
+│   │   │   ├── TokenExchangeView.java
+│   │   │   └── CurrencyMonitorView.java
+│   │   ├── transaction/
+│   │   │   ├── P2PTransferView.java
+│   │   │   ├── BankTransferView.java
+│   │   │   └── EmergencyWithdrawalView.java
+│   │   ├── wallet/
+│   │   │   ├── CitizenWalletView.java
+│   │   │   ├── MerchantWalletView.java
+│   │   │   ├── BankWalletView.java
+│   │   │   └── GovernmentWalletView.java
+│   │   └── admin/
+│   │       ├── BankRegistrationView.java
+│   │       ├── RateConfigurationView.java
+│   │       └── GovernanceVotingView.java
+│   └── common/ (existing UI components)
+└── utils/ (existing utilities)

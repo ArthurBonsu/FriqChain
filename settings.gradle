@@ -1,0 +1,32 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+    
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == 'org.gradle.toolchains.foojay-resolver-convention') {
+                useVersion('0.8.0')
+            }
+        }
+    }
+}
+
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0' apply false
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'Tinc-Blockchain'
+
+// Include all modules
+include 'app'
+include 'utilities'
+include 'list'
+include 'build-logic'

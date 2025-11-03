@@ -1,0 +1,28 @@
+org.example.app.core.api/
+├── common/
+│   ├── APIConfig.java               - Configuration parameters
+│   └── APIResponse.java             - Common response format
+│
+├── rest/
+│   ├── RESTServer.java              - HTTP server implementation
+│   ├── RESTController.java          - Request routing
+│   └── handlers/
+│       ├── BlockHandler.java        - Block-related endpoints
+│       ├── TransactionHandler.java  - Transaction endpoints 
+│       ├── AccountHandler.java      - Account balance endpoints
+│       ├── TokenHandler.java        - Token operations
+│       └── LatestBlockHandler.java  - Latest block queries
+│
+└── rpc/
+    ├── RPCServer.java               - JSON-RPC server
+    ├── RPCRequest.java              - Request format
+    ├── RPCResponse.java             - Response format
+    ├── RPCError.java                - Error codes & messages
+    ├── RPCMethod.java               - Method interface
+    ├── RPCService.java              - Method registry
+    └── methods/
+        ├── GetBalanceMethod.java    - Account balance
+        ├── GetBlockMethod.java      - Block retrieval
+        ├── GetTransactionMethod.java - Transaction lookup
+        ├── SendTransactionMethod.java - Submit transactions
+        └── GetTokenBalanceMethod.java - Token balances

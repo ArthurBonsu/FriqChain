@@ -1,0 +1,20 @@
+[versions]
+# Core versions
+java = "22"
+junit = "5.10.1"
+mockito = "5.8.0"
+
+# Dependency versions
+commons-text = "1.11.0"
+gson = "2.10.1"
+bouncycastle = "1.78.1"
+slf4j = "2.0.9"
+logback = "1.4.14"
+
+[libraries]
+# Add your library definitions here
+commons-text = { group = "org.apache.commons", name = "commons-text", version.ref = "commons-text" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+
+[plugins]
+# Add any custom plugins if needed

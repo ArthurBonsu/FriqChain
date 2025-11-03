@@ -1,0 +1,78 @@
+plugins {
+    id 'java-library'
+    id 'jacoco'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // If you have any specific dependencies for the list module
+    // For example:
+    // implementation 'some:library:version'
+    
+    // Testing dependencies
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.1'
+    testImplementation 'org.mockito:mockito-core:5.8.0'
+
+    // Jackson dependencies
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
+  
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    implementation "org.glassfish.jaxb:jaxb-runtime:2.3.1"
+     // Micrometer metrics dependencies - use specific versions
+    implementation 'io.micrometer:micrometer-core:1.11.0'
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.11.0'
+    // JavaFX dependencies
+    implementation 'org.openjfx:javafx-controls:17.0.2'
+    implementation 'org.openjfx:javafx-fxml:17.0.2'
+    implementation 'org.openjfx:javafx-base:17.0.2'
+    implementation 'org.openjfx:javafx-graphics:17.0.2'
+    
+    // JAXB dependencies (for XML binding)
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
+    
+    // For any other standard Java libraries that might be missing
+    implementation 'com.sun.activation:javax.activation:1.2.0'
+
+
+    testImplementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    testImplementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(22)
+    }
+}
+
+test {
+    useJUnitPlatform()
+    
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }
+}
+
+// Compiler warnings
+tasks.withType(JavaCompile) {
+    options.compilerArgs += [
+        '-Xlint:unchecked', 
+        '-Xlint:deprecation'
+    ]
+}

@@ -1,0 +1,10 @@
+src/main/java/org/example/app/
+├── App.java                            ← EXISTING
+├── MessageUtils.java                   ← EXISTING
+├── TincBlockchainApplication.java      ← CREATE THIS
+├── JavaFXTest.java                     ← CREATE THIS
+└── core/ui/dashboard/
+    └── DashboardController.java        ← EXISTING (keep as-is)
+
+src/main/resources/
+└── dashboard.fxml                      ← CREATE THIS

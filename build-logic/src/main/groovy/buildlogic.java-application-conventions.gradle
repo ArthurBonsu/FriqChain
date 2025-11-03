@@ -1,0 +1,77 @@
+plugins {
+    // Apply the common convention plugin for shared build configuration
+    id 'buildlogic.java-common-conventions'
+
+    // Apply the java-library plugin for API and implementation separation
+    id 'java-library'
+}
+
+// Library-specific configurations
+dependencies {
+    // Optional: Add common dependencies for all library projects
+    api 'org.slf4j:slf4j-api:2.0.9'
+}
+
+// Configure Java Library specific tasks
+javadoc {
+    options {
+        encoding = 'UTF-8'
+        charSet = 'UTF-8'
+        
+        // Generate documentation for all visibility levels
+        memberLevel = JavadocMemberLevel.PROTECTED
+    }
+}
+
+// Add source jar generation
+task sourcesJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+// Add javadoc jar generation
+task javadocJar(type: Jar) {
+    archiveClassifier = 'javadoc'
+    from javadoc
+}
+
+// Optional: Artifact configuration
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+// Library publication configuration
+publishing {
+    publications {
+        library(MavenPublication) {
+            from components.java
+            
+            artifact sourcesJar
+            artifact javadocJar
+            
+            pom {
+                name = project.name
+                description = 'A Java library project'
+                
+                // Optional: Add more POM metadata
+                url = 'https://example.com/project'
+                
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Optional: API compatibility checks
+tasks.withType(JavaCompile) {
+    options.compilerArgs += [
+        '-Xlint:all',
+        '-Werror'  // Treat warnings as errors
+    ]
+}

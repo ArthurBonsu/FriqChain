@@ -1,0 +1,170 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'jacoco'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+}
+
+// Set encoding for all compilation tasks
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
+// Java toolchain configuration
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(22)
+    }
+    sourceCompatibility = JavaVersion.VERSION_22
+    targetCompatibility = JavaVersion.VERSION_22
+}
+
+javafx {
+    version = '21.0.2'
+    modules = [
+            'javafx.controls',
+            'javafx.fxml',
+            'javafx.web',
+            'javafx.swing',
+            'javafx.base',
+            'javafx.graphics',
+            'javafx.media'
+    ]
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+    maven { url 'https://repo.maven.apache.org/maven2/' }
+}
+
+dependencies {
+    // Local project dependencies
+    implementation project(':utilities')
+
+    // Core dependencies
+    implementation 'org.apache.commons:commons-text:1.11.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78'
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
+    implementation 'org.xerial:sqlite-jdbc:3.47.0.0'
+
+    // Jackson dependencies
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
+
+
+     implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    implementation "org.glassfish.jaxb:jaxb-runtime:2.3.1"
+   // Micrometer metrics dependencies - use specific versions
+    implementation 'io.micrometer:micrometer-core:1.11.0'
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.11.0'
+    
+    // JavaFX dependencies
+    implementation 'org.openjfx:javafx-controls:17.0.2'
+    implementation 'org.openjfx:javafx-fxml:17.0.2'
+    implementation 'org.openjfx:javafx-base:17.0.2'
+    implementation 'org.openjfx:javafx-graphics:17.0.2'
+    
+    // JAXB dependencies (for XML binding)
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
+    
+    // For any other standard Java libraries that might be missing
+    implementation 'com.sun.activation:javax.activation:1.2.0'
+
+
+    // Test dependencies
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.1'
+    testImplementation 'org.mockito:mockito-core:5.8.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.8.0'
+    testImplementation 'com.h2database:h2:2.2.224'
+    testImplementation 'org.assertj:assertj-core:3.25.1'
+    testImplementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    testImplementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
+}
+
+application {
+    mainClass = 'org.example.app.App'
+}
+
+// Configure Java compilation
+tasks.withType(JavaCompile).configureEach {
+    options.release = 22
+    options.encoding = 'UTF-8'
+    options.compilerArgs += [
+            '--enable-preview',
+            '-Xlint:unchecked',
+            '-Xlint:deprecation'
+    ]
+}
+
+// Configure test execution
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    maxHeapSize = '2048m'
+
+    // Set encoding for test output
+    systemProperty 'file.encoding', 'UTF-8'
+    systemProperty 'user.timezone', 'UTC'
+
+    jvmArgs += [
+            '--enable-preview'
+    ]
+
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showStandardStreams = true
+        // Ensure test output uses UTF-8
+        outputs.upToDateWhen { false }
+    }
+}
+
+// JavaFX application runner
+task runDashboard(type: JavaExec) {
+    group = 'application'
+    description = 'Runs the dashboard with JavaFX'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.example.app.App'
+
+    jvmArgs = [
+            '--enable-preview'
+    ]
+}
+
+// JavaFX test runner
+task testJavaFX(type: JavaExec) {
+    group = 'verification'
+    description = 'Test if JavaFX is working'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.example.app.JavaFXTest'
+
+    jvmArgs = [
+            '--enable-preview'
+    ]
+}
+
+// JaCoCo configuration
+jacocoTestReport {
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }
+}
+
+check.dependsOn jacocoTestReport
+
+// Build cache configuration
+if (hasProperty('buildCacheEnabled') && buildCacheEnabled.toBoolean()) {
+    buildCache {
+        local {
+            isEnabled = true
+        }
+    }
+}

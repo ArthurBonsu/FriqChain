@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" 
+            fx:controller="org.example.app.core.ui.dashboard.DashboardController">
+   
+   <!-- LEFT: Navigation Drawer with ALL Core UI Modules -->
+   <left>
+      <VBox fx:id="navigationDrawer" prefWidth="280.0" style="-fx-background-color: #1a1a2e; -fx-border-color: #333; -fx-border-width: 0 1 0 0;">
+         
+         <!-- App Header -->
+         <VBox alignment="CENTER" spacing="8" style="-fx-padding: 25 20 20 20; -fx-background-color: #16213e;">
+            <Label fx:id="appTitleLabel" text="TINC" style="-fx-text-fill: #00ff88; -fx-font-size: 32px; -fx-font-weight: bold;" />
+            <Label text="Blockchain Management" style="-fx-text-fill: #888; -fx-font-size: 14px;" />
+         </VBox>
+         
+         <!-- Navigation Scroll Pane -->
+         <ScrollPane fitToWidth="true" style="-fx-background: #1a1a2e; -fx-background-color: #1a1a2e;" VBox.vgrow="ALWAYS">
+            <VBox spacing="5" style="-fx-padding: 15 20 20 20;">
+               
+               <!-- CORE MODULES Section -->
+               <Label text="CORE MODULES" style="-fx-text-fill: #666; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 15 0 8 0;" />
+               
+               <!-- 1. Dashboard / Overview UI -->
+               <Button fx:id="dashboardNavBtn" text="📊 Dashboard / Overview" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: rgba(0,255,136,0.2); -fx-text-fill: #00ff88; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="View blockchain metrics and statistics"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- 2. Wallet Management UI -->
+               <Button fx:id="walletNavBtn" text="💰 Wallet Management" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="Manage wallets and balances"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- 3. Transaction Management UI -->
+               <Button fx:id="transactionsNavBtn" text="💸 Transaction Management" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="View and manage transactions"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- 4. Block Explorer UI -->
+               <Button fx:id="blocksNavBtn" text="🧱 Block Explorer" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="Explore blockchain blocks"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- BLOCKCHAIN FEATURES Section -->
+               <Label text="BLOCKCHAIN FEATURES" style="-fx-text-fill: #666; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 20 0 8 0;" />
+               
+               <!-- 5. Smart Contract UI -->
+               <Button fx:id="smartContractNavBtn" text="📜 Smart Contract" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="Deploy and manage smart contracts"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- 6. Token Management UI -->
+               <Button fx:id="tokensNavBtn" text="🪙 Token Management" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="Create and manage tokens"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- NETWORK & CONSENSUS Section -->
+               <Label text="NETWORK &amp; CONSENSUS" style="-fx-text-fill: #666; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 20 0 8 0;" />
+               
+               <!-- 7. Network / P2P Management UI -->
+               <Button fx:id="networkNavBtn" text="🌐 Network Manager" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="Manage P2P network connections"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- 8. Consensus / Mining UI -->
+               <Button fx:id="consensusNavBtn" text="⚖️ Consensus &amp; Mining" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="Configure consensus mechanism"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- TOOLS & UTILITIES Section -->
+               <Label text="TOOLS &amp; UTILITIES" style="-fx-text-fill: #666; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 20 0 8 0;" />
+               
+               <!-- 9. Configuration UI (NEW - CRITICAL) -->
+               <Button fx:id="configNavBtn" text="⚙️ Configuration" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="Blockchain, Consensus, Network, and Storage Configuration"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- 10. Settings / General Settings UI -->
+               <Button fx:id="settingsNavBtn" text="🔧 Settings" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="General application settings"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- 11. API / RPC Interface UI -->
+               <Button fx:id="apiNavBtn" text="🔌 API / RPC Interface" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="Manage API and RPC endpoints"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- DEVELOPMENT TOOLS Section -->
+               <Label text="DEVELOPMENT" style="-fx-text-fill: #666; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 20 0 8 0;" />
+               
+               <!-- Test Network -->
+               <Button fx:id="testNetworkNavBtn" text="🧪 Test Network" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="Local test network environment"/>
+                  </tooltip>
+               </Button>
+               
+               <!-- AI Chat Utility -->
+               <Button fx:id="aiChatNavBtn" text="🤖 AI Chat Utility" maxWidth="Infinity" 
+                       styleClass="nav-button"
+                       style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12; -fx-alignment: center-left; -fx-background-radius: 8; -fx-cursor: hand;">
+                  <tooltip>
+                     <Tooltip text="AI-powered blockchain assistant"/>
+                  </tooltip>
+               </Button>
+               
+            </VBox>
+         </ScrollPane>
+         
+         <!-- Bottom Status Section -->
+         <VBox spacing="10" style="-fx-padding: 15 20 20 20; -fx-background-color: #16213e;">
+            <Separator style="-fx-background: #333;" />
+            
+            <!-- Network Status -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+               <Label text="●" style="-fx-text-fill: #00ff88; -fx-font-size: 12px;" />
+               <Label text="Network Online" style="-fx-text-fill: #00ff88; -fx-font-size: 12px; -fx-font-weight: bold;" />
+            </HBox>
+            
+            <!-- PBFT Status -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+               <Label text="●" style="-fx-text-fill: #00ff88; -fx-font-size: 12px;" />
+               <Label text="PBFT Active" style="-fx-text-fill: #00ff88; -fx-font-size: 12px; -fx-font-weight: bold;" />
+            </HBox>
+         </VBox>
+      </VBox>
+   </left>
+
+   <!-- TOP: Enhanced Header with Better Status -->
+   <top>
+      <HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: #2b2b2b; -fx-padding: 15;">
+         <children>
+            <Label text="TINC Blockchain Dashboard" textFill="WHITE">
+               <font>
+                  <Font name="System Bold" size="18.0" />
+               </font>
+            </Label>
+            <Region HBox.hgrow="ALWAYS" />
+            <HBox alignment="CENTER" spacing="15.0">
+               <children>
+                  <Label text="Network:" textFill="#cccccc" />
+                  <Label fx:id="networkStatusLabel" text="Offline" textFill="#ff0000" />
+                  <Separator orientation="VERTICAL" />
+                  <Label text="Consensus:" textFill="#cccccc" />
+                  <Label fx:id="consensusAlgorithmLabel" text="PBFT" textFill="#40e0d0" />
+               </children>
+            </HBox>
+         </children>
+      </HBox>
+   </top>
+   
+   <!-- CENTER: Main Dashboard Content -->
+   <center>
+      <ScrollPane fx:id="contentArea" fitToWidth="true" style="-fx-background-color: #1e1e1e;">
+         <content>
+            <VBox spacing="20.0" style="-fx-background-color: #1e1e1e;">
+               <children>
+                  <!-- Enhanced Metrics Grid with Better Styling -->
+                  <GridPane hgap="15.0" vgap="15.0">
+                     <columnConstraints>
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                     </columnConstraints>
+                     <rowConstraints>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                     </rowConstraints>
+                     <children>
+                        <!-- Block Height Card -->
+                        <VBox alignment="CENTER" spacing="8.0" style="-fx-background-color: #22334e; -fx-background-radius: 12; -fx-padding: 25;">
+                           <children>
+                              <Label text="Block Height" textFill="#ccc">
+                                 <font>
+                                    <Font size="12.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="blockHeightLabel" text="0" textFill="#00ff88">
+                                 <font>
+                                    <Font name="System Bold" size="28.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </VBox>
+                        
+                        <!-- Active Peers Card -->
+                        <VBox alignment="CENTER" spacing="8.0" style="-fx-background-color: #22334e; -fx-background-radius: 12; -fx-padding: 25;" GridPane.columnIndex="1">
+                           <children>
+                              <Label text="Active Peers" textFill="#ccc">
+                                 <font>
+                                    <Font size="12.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="activePeersLabel" text="0" textFill="#00ff88">
+                                 <font>
+                                    <Font name="System Bold" size="28.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </VBox>
+                        
+                        <!-- Mempool Size Card -->
+                        <VBox alignment="CENTER" spacing="8.0" style="-fx-background-color: #22334e; -fx-background-radius: 12; -fx-padding: 25;" GridPane.columnIndex="2">
+                           <children>
+                              <Label text="Pending Transactions" textFill="#ccc">
+                                 <font>
+                                    <Font size="12.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="mempoolSizeLabel" text="0" textFill="#ffaa00">
+                                 <font>
+                                    <Font name="System Bold" size="28.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </VBox>
+                        
+                        <!-- Network Hashrate Card -->
+                        <VBox alignment="CENTER" spacing="8.0" style="-fx-background-color: #22334e; -fx-background-radius: 12; -fx-padding: 25;" GridPane.columnIndex="3">
+                           <children>
+                              <Label text="Network Hashrate" textFill="#ccc">
+                                 <font>
+                                    <Font size="12.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="networkHashrateLabel" text="0 H/s" textFill="#00ff88">
+                                 <font>
+                                    <Font name="System Bold" size="18.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </VBox>
+                        
+                        <!-- Network Uptime Card -->
+                        <VBox alignment="CENTER" spacing="8.0" style="-fx-background-color: #22334e; -fx-background-radius: 12; -fx-padding: 25;" GridPane.rowIndex="1">
+                           <children>
+                              <Label text="Network Uptime" textFill="#ccc">
+                                 <font>
+                                    <Font size="12.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="uptimeLabel" text="00:00:00" textFill="#00ff88">
+                                 <font>
+                                    <Font name="System Bold" size="18.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </VBox>
+                        
+                        <!-- Last Block Time Card -->
+                        <VBox alignment="CENTER" spacing="8.0" style="-fx-background-color: #22334e; -fx-background-radius: 12; -fx-padding: 25;" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                           <children>
+                              <Label text="Last Block" textFill="#ccc">
+                                 <font>
+                                    <Font size="12.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="lastBlockTimeLabel" text="--:--:--" textFill="#00ff88">
+                                 <font>
+                                    <Font name="System Bold" size="18.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </VBox>
+                     </children>
+                  </GridPane>
+                  
+                  <!-- Enhanced Charts Section -->
+                  <HBox spacing="25.0">
+                     <children>
+                        <VBox HBox.hgrow="ALWAYS" spacing="15">
+                           <Label text="Block Time Metrics" textFill="WHITE">
+                              <font>
+                                 <Font name="System Bold" size="16.0" />
+                              </font>
+                           </Label>
+                           <LineChart fx:id="blockTimeChart" prefHeight="250.0" style="-fx-background-color: #22334e; -fx-background-radius: 12;">
+                              <xAxis>
+                                 <CategoryAxis side="BOTTOM" />
+                              </xAxis>
+                              <yAxis>
+                                 <NumberAxis side="LEFT" />
+                              </yAxis>
+                           </LineChart>
+                        </VBox>
+                        
+                        <VBox HBox.hgrow="ALWAYS" spacing="15">
+                           <Label text="Transaction Pool" textFill="WHITE">
+                              <font>
+                                 <Font name="System Bold" size="16.0" />
+                              </font>
+                           </Label>
+                           <LineChart fx:id="transactionChart" prefHeight="250.0" style="-fx-background-color: #22334e; -fx-background-radius: 12;">
+                              <xAxis>
+                                 <CategoryAxis side="BOTTOM" />
+                              </xAxis>
+                              <yAxis>
+                                 <NumberAxis side="LEFT" />
+                              </yAxis>
+                           </LineChart>
+                        </VBox>
+                     </children>
+                  </HBox>
+                  
+                  <!-- Enhanced Tables Section -->
+                  <HBox spacing="25.0">
+                     <children>
+                        <!-- Recent Blocks Table -->
+                        <VBox HBox.hgrow="ALWAYS" spacing="15">
+                           <children>
+                              <Label text="Recent Blocks" textFill="WHITE">
+                                 <font>
+                                    <Font name="System Bold" size="16.0" />
+                                 </font>
+                              </Label>
+                              <TableView fx:id="recentBlocksTable" prefHeight="350.0" style="-fx-background-color: #22334e; -fx-background-radius: 12;">
+                                 <columns>
+                                    <TableColumn fx:id="blockHashColumn" prefWidth="150.0" text="Hash" />
+                                    <TableColumn fx:id="blockNumberColumn" prefWidth="80.0" text="Number" />
+                                    <TableColumn fx:id="blockMinerColumn" prefWidth="120.0" text="Miner" />
+                                    <TableColumn fx:id="blockTimestampColumn" prefWidth="100.0" text="Time" />
+                                    <TableColumn fx:id="blockTxCountColumn" prefWidth="60.0" text="Txs" />
+                                 </columns>
+                              </TableView>
+                           </children>
+                        </VBox>
+                        
+                        <!-- Recent Transactions Table -->
+                        <VBox HBox.hgrow="ALWAYS" spacing="15">
+                           <children>
+                              <Label text="Recent Transactions" textFill="WHITE">
+                                 <font>
+                                    <Font name="System Bold" size="16.0" />
+                                 </font>
+                              </Label>
+                              <TableView fx:id="recentTransactionsTable" prefHeight="350.0" style="-fx-background-color: #22334e; -fx-background-radius: 12;">
+                                 <columns>
+                                    <TableColumn fx:id="txHashColumn" prefWidth="150.0" text="Hash" />
+                                    <TableColumn fx:id="txFromColumn" prefWidth="120.0" text="From" />
+                                    <TableColumn fx:id="txToColumn" prefWidth="120.0" text="To" />
+                                    <TableColumn fx:id="txValueColumn" prefWidth="100.0" text="Value" />
+                                    <TableColumn fx:id="txStatusColumn" prefWidth="80.0" text="Status" />
+                                 </columns>
+                              </TableView>
+                           </children>
+                        </VBox>
+                     </children>
+                  </HBox>
+               </children>
+               <padding>
+                  <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+               </padding>
+            </VBox>
+         </content>
+      </ScrollPane>
+   </center>
+</BorderPane>
