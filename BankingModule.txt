@@ -99,4 +99,4 @@ app/src/main/java/org/example/app/
 │   │       ├── RateConfigurationView.java
 │   │       └── GovernanceVotingView.java
 │   └── common/ (existing UI components)
-└── utils/ (existing utilities)
+└── utils/ (existing utilities)-
