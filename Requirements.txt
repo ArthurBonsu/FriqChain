@@ -1,0 +1,33 @@
+We are building a African platform for tokenization the that aims to take all the African currency, provides a tokenized version of them and back them with a fair financial calculation for the value of each currency and tokens while taking into consideration the international financial system. However it should be able to be also convertible to global currencies such as the RMP, rupees, rubles, USD and Euros. This platform should not be held hostage by international financial system but the aim is to be independent of itself, we will use a public blockchain. They will connect with local bank and help facilitate transaction in respective countries. The aim is to be independent while still serving platforms. 
+
+Achievements :
+1. We have built the blockchain itself and we are still debugging it but we have built the blokchain using Java and smart contracts using Solidity can work on it 
+2. We want to build the service system which will be how it works with local banks (So we called it banking) but we don't want our system hijacked by local banks so tokens can trade among themselves and people can get their money without using banks ( we have to develop a way).
+I will give you the tree of the blockchain we have built and the tree of the tokenized banking system we aim to build over it. With this you give me a proper banking tree. This system will form the Banking Module of the blockchain System
+ 
+
+Requirements
+(We are doing a production level work)
+1. Cannot be destroyed or taken down by the government
+2. Provides a better way of providing advantage over every global system 
+3. Provides a encrypted method for reaching African based banks via a protected unique encryption scheme and registration input systems for banks via API
+4. Always provide a fair system for African banks taking into consideration the international financial system
+5. Facilitate currency to token relationship for governments 
+6. Facilitate currency to token relationship for private entities that will register for services and connect with banks
+7. Develop a way where the system is independent of governments and banks. There has to be a model that helps people to get their money without depending on the banks 
+I added two more
+8. In An AI world we have to also account for AI Agent verification but that could be set as an option. AI agent can also make decisions on behalf of something. 
+9.Disputes can be resolved here 
+10. Proof of Reserves for currencies and coins
+
+
+Current developed folder(intergrated) : 
+app/src/main/java/org/example/app/
+├── core/
+│   ├── blockchain/ (existing with enhancements)
+│   │   ├── transaction/
+│   │   │   ├── TokenBankTransaction.java
+│   │   │   ├── BankSettlementTransaction.java
+│   │   │   ├── BankRegistrationTransaction.java
+│   │   │   ├── CurrencyExchangeTransaction.java
+│   │   │   └── P2PTransferTransaction.java (new)
