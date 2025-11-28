@@ -1,0 +1,561 @@
+# GOVERNANCE MODULE - INTEGRATION ARCHITECTURE
+## Visual Dependency Mapping
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         CORE/GOVERNANCE/ (13 NEW FILES)                         │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                    ┌─────────────────┴─────────────────┐
+                    │                                   │
+        ┌───────────▼──────────┐            ┌──────────▼──────────┐
+        │  BLOCKCHAIN CORE     │            │  BANKING MODULE     │
+        │  (67 dependencies)   │            │  (94 dependencies)  │
+        └──────────────────────┘            └─────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+                        DETAILED INTEGRATION ARCHITECTURE
+═══════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                VotingDAO.java                                    │
+│  Core voting infrastructure for all governance proposals                         │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[READS]─────> core/blockchain/block/Validator.java
+         │                (verify voter eligibility)
+         │
+         ├──[WRITES]────> core/blockchain/state/StateDB.java
+         │                (store proposals & votes)
+         │
+         ├──[BROADCASTS]> core/blockchain/p2p/PeerNetwork.java
+         │                (gossip proposals to network)
+         │
+         ├──[QUERIES]───> core/banking/registration/ValidatorNodeRegistry.java
+         │                (get validator list & voting power)
+         │
+         └──[CHECKS]────> core/banking/security/ReputationScoreManager.java
+                          (reputation-weighted voting)
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        FairRateAlgorithmConfig.java                              │
+│  Configures fair exchange rate calculation parameters                            │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[CONTROLS]──> core/banking/tokenization/FairRateAlgorithm.java
+         │                (set algorithm parameters: priority multipliers, weights)
+         │
+         ├──[MONITORS]──> core/banking/oracle/FXRateOracle.java
+         │                (get foreign currency reference rates)
+         │
+         ├──[INTEGRATES]> core/banking/oracle/MarketDataOracle.java
+         │                (African market data for rate calculation)
+         │
+         ├──[PROTECTS]──> core/banking/tokenization/AntiManipulationController.java
+         │                (prevent rate manipulation attacks)
+         │
+         └──[UPDATES]───> core/blockchain/state/StateManager.java
+                          (persist configuration changes)
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          EconomicPolicyRules.java                                │
+│  Manages continental economic policies (ASU basket, token supply, reserves)      │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[TRIGGERS]──> core/banking/tokenization/DynamicBasketRebalancer.java
+         │                (rebalance ASU basket when conditions change)
+         │
+         ├──[CONTROLS]──> core/banking/tokenization/TokenMintingController.java
+         │                (set minting limits & collateral requirements)
+         │
+         ├──[MONITORS]──> core/banking/foreign/FXExposureMonitor.java
+         │                (track foreign currency exposure)
+         │
+         ├──[VALIDATES]─> core/banking/reserves/ReserveBackingCalculator.java
+         │                (ensure 120% minimum backing)
+         │
+         ├──[EXECUTES]──> core/blockchain/block/TransactionManager.java
+         │                (create policy change transactions)
+         │
+         └──[READS]─────> core/blockchain/state/BlockchainState.java
+                          (current economic state)
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              LocalDAO.java                                       │
+│  Community-level governance (regional policies, local liquidity)                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[MANAGES]───> core/banking/network/RegionalNodeCluster.java
+         │                (local node governance)
+         │
+         ├──[OVERSEES]──> core/banking/independence/CommunityMeshNode.java
+         │                (community P2P network policies)
+         │
+         ├──[CONTROLS]──> core/banking/independence/LocalLiquidityPool.java
+         │                (local liquidity pool parameters)
+         │
+         ├──[VOTES VIA]─> VotingDAO.java (sibling component)
+         │                (submit community proposals)
+         │
+         └──[STORES]────> core/blockchain/block/ShardState.java
+                          (regional governance state)
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            NationalDAO.java                                      │
+│  Country-level governance (bank policies, agent networks, national currency)     │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[MANAGES]───> core/banking/registration/BankRegistrationContract.java
+         │                (approve/suspend banks)
+         │
+         ├──[OVERSEES]──> core/banking/independence/AgentNetworkManager.java
+         │                (retail agent regulations)
+         │
+         ├──[QUERIES]───> core/banking/registration/ValidatorNodeRegistry.java
+         │                (national validator representation)
+         │
+         ├──[GOVERNS]───> core/banking/tokenization/NationalCurrencyToken.java
+         │                (national token policies)
+         │
+         ├──[ESCALATES]─> ContinentalDAO.java (parent component)
+         │                (propose continental-level changes)
+         │
+         └──[STORES]────> core/blockchain/state/StateDB.java
+                          (national governance decisions)
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          ContinentalDAO.java                                     │
+│  Africa-wide governance (ASU, sanctions, cross-border, emergency actions)        │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[COORDINATES]> core/banking/network/ShardCoordinator.java
+         │                (cross-shard governance coordination)
+         │
+         ├──[ENFORCES]──> core/banking/compliance/SanctionEnforcementEngine.java
+         │                (apply/lift sanctions)
+         │
+         ├──[CHECKS]────> core/banking/security/GeographicDiversityChecker.java
+         │                (ensure <33% geographic concentration)
+         │
+         ├──[RESOLVES]──> core/banking/compliance/ArbitrationCouncil.java
+         │                (continent-wide dispute resolution)
+         │
+         ├──[RELAYS]────> core/blockchain/p2p/CrossShardRelay.java
+         │                (broadcast continental proposals)
+         │
+         ├──[REQUIRES]──> SupermajorityCalculator.java (sibling component)
+         │                (≥66% multi-party approval)
+         │
+         └──[VALIDATES]─> core/blockchain/block/BlockValidator.java
+                          (validate high-stakes blocks)
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         ValidatorGovernance.java                                 │
+│  Validator management (registration, staking, slashing, performance)             │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[REGISTERS]─> core/banking/registration/ValidatorNodeRegistry.java
+         │                (add/remove validators)
+         │
+         ├──[MANAGES]───> core/blockchain/wallet/ValidatorStakeWallet.java
+         │                (validator staking funds)
+         │
+         ├──[SLASHES]───> core/banking/security/SlashingEngine.java
+         │                (penalize bad validators: 5-50% based on severity)
+         │
+         ├──[TRACKS]────> core/banking/security/ReputationScoreManager.java
+         │                (validator performance & trustworthiness)
+         │
+         ├──[VERIFIES]──> core/blockchain/crypto/Certificate.java
+         │                (validator identity certificates)
+         │
+         └──[COLLATERAL]> core/banking/security/CollateralManager.java
+                          (manage validator collateral)
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         TreasuryGovernance.java                                  │
+│  Continental treasury management (reserves, emergency fund, ASU backing)         │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[MANAGES]───> core/blockchain/wallet/GovernmentTreasuryWallet.java
+         │                (treasury fund access)
+         │
+         ├──[CONTROLS]──> core/banking/reserves/EmergencyStabilityFund.java
+         │                (emergency reserve deployment)
+         │
+         ├──[VERIFIES]──> core/banking/reserves/ProofOfReservesContract.java
+         │                (verify 120% backing requirement)
+         │
+         ├──[AUDITS]────> core/banking/reserves/ReserveAuditManager.java
+         │                (continuous reserve auditing)
+         │
+         ├──[APPROVES]──> core/banking/wallet/MultiSigWallet.java
+         │                (multi-sig for large movements)
+         │
+         └──[MANAGES]───> core/banking/security/CollateralManager.java
+                          (treasury collateral positions)
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         ExposureCapManager.java                                  │
+│  Foreign currency exposure limits (≤10% max, synthetic FX control)               │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[MONITORS]──> core/banking/foreign/FXExposureMonitor.java
+         │                (real-time foreign exposure tracking)
+         │
+         ├──[CONTROLS]──> core/banking/foreign/SyntheticFXMinter.java
+         │                (limit sUSD/sEUR minting)
+         │
+         ├──[MANAGES]───> core/banking/foreign/FXCollateralManager.java
+         │                (collateral for synthetic FX)
+         │
+         ├──[GOVERNS]───> core/banking/foreign/ExternalStablecoinBridge.java
+         │                (enable/disable USDC/EURC bridges)
+         │
+         ├──[TRIGGERS]──> core/banking/security/CircuitBreaker.java
+         │                (emergency stop if >10% exposure)
+         │
+         └──[READS]─────> core/blockchain/state/BlockchainState.java
+                          (current exposure levels)
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                      EmergencyProposalManager.java                               │
+│  Fast-track emergency proposals (circuit breakers, system-wide halts)           │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[ACTIVATES]─> core/banking/security/CircuitBreaker.java
+         │                (emergency transaction halts)
+         │
+         ├──[TRIGGERS]──> core/banking/security/EmergencyShutdownProtocol.java
+         │                (system-wide emergency stop)
+         │
+         ├──[REQUIRES]──> core/banking/reserves/ThresholdSignatureManager.java
+         │                (fast M-of-N approval: ≥5 of 9 within 1 hour)
+         │
+         ├──[BROADCASTS]> core/blockchain/p2p/BroadcastManager.java
+         │                (priority message broadcasting)
+         │
+         ├──[VALIDATES]─> SupermajorityCalculator.java (sibling component)
+         │                (reduced threshold: ≥51% for emergencies)
+         │
+         └──[LOGS]──────> GovernanceAuditLog.java (sibling component)
+                          (immutable emergency action log)
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          ProposalExecutor.java                                   │
+│  Executes approved governance proposals (creates transactions, state changes)    │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[CREATES]───> core/blockchain/transaction/ASUSettlementTransaction.java
+         │                (for ASU policy changes)
+         │
+         ├──[CREATES]───> core/blockchain/transaction/CurrencyExchangeTransaction.java
+         │                (for rate adjustments)
+         │
+         ├──[SUBMITS]───> core/blockchain/block/TransactionManager.java
+         │                (submit transactions to mempool)
+         │
+         ├──[PROCESSES]─> core/blockchain/block/BlockProcessor.java
+         │                (ensure proposal inclusion in blocks)
+         │
+         ├──[UPDATES]───> core/blockchain/state/StateManager.java
+         │                (execute state transitions)
+         │
+         ├──[RESPECTS]──> core/banking/compliance/ChallengeWindowManager.java
+         │                (wait for challenge period: 7 days)
+         │
+         ├──[ENFORCES]──> core/banking/compliance/SanctionEnforcementEngine.java
+         │                (apply sanctions from proposals)
+         │
+         └──[TRACKS]────> core/banking/compliance/RemediationPathTracker.java
+                          (monitor remediation progress)
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                      SupermajorityCalculator.java                                │
+│  Calculates multi-party approval (validators + oracles + arbitrators ≥ 66%)     │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[QUERIES]───> core/banking/registration/ValidatorNodeRegistry.java
+         │                (total validator count & voting power)
+         │
+         ├──[QUERIES]───> core/banking/registration/ReporterRegistry.java
+         │                (oracle reporter count)
+         │
+         ├──[QUERIES]───> core/banking/compliance/ArbitrationCouncil.java
+         │                (arbitrator count for disputes)
+         │
+         ├──[VERIFIES]──> core/banking/reserves/ThresholdSignatureManager.java
+         │                (M-of-N cryptographic signatures)
+         │
+         ├──[CHECKS]────> core/banking/security/AntiSybilDefense.java
+         │                (prevent fake vote multiplication)
+         │
+         ├──[VALIDATES]─> core/blockchain/crypto/Keypair.java
+         │                (signature verification)
+         │
+         └──[CALCULATES]> Formula: (V_yes + R_yes + A_yes) / (V_total + R_total + A_total) ≥ 0.66
+                          where V=validators, R=reporters, A=arbitrators
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        GovernanceAuditLog.java                                   │
+│  Immutable transparent record of all governance actions                          │
+└─────────────────────────────────────────────────────────────────────────────────┘
+         │
+         ├──[READS]─────> core/blockchain/state/BlockchainState.java
+         │                (historical governance state)
+         │
+         ├──[STORES]────> core/blockchain/state/StateDB.java
+         │                (immutable audit records)
+         │
+         ├──[TRACKS]────> core/banking/compliance/ComplianceReportGenerator.java
+         │                (compliance action history)
+         │
+         ├──[MONITORS]──> core/banking/compliance/RemediationPathTracker.java
+         │                (enforcement & restoration records)
+         │
+         ├──[RECORDS]───> core/banking/compliance/DisputeResolutionContract.java
+         │                (dispute outcomes)
+         │
+         └──[QUERIES]───> core/blockchain/block/Block.java
+                          (retrieve historical blocks for audit trail)
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+                            CROSS-CUTTING INTEGRATIONS
+═══════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        ALL GOVERNANCE COMPONENTS USE:                            │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+1. core/blockchain/state/StateDB.java
+   └─> Store all proposals, votes, configurations, and decisions
+
+2. core/blockchain/block/Validator.java
+   └─> Verify voter eligibility and voting power
+
+3. core/banking/security/ReputationScoreManager.java
+   └─> Weight votes by participant reputation
+
+4. core/banking/oracle/OracleAggregator.java
+   └─> Get economic data for policy decisions
+
+5. core/banking/security/SlashingEngine.java
+   └─> Penalize malicious governance participants
+
+6. core/blockchain/crypto/PKIManager.java
+   └─> Cryptographic verification of governance actions
+
+7. core/blockchain/p2p/PeerNetwork.java
+   └─> Broadcast governance events to network
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+                          DATA FLOW EXAMPLE: ECONOMIC POLICY CHANGE
+═══════════════════════════════════════════════════════════════════════════════════
+
+1. OracleAggregator detects ASU basket imbalance (Ghana 45%, Nigeria 35%, others 20%)
+                              │
+                              ▼
+2. EconomicPolicyRules creates rebalancing proposal
+                              │
+                              ▼
+3. VotingDAO broadcasts proposal to ValidatorNodeRegistry
+                              │
+                              ▼
+4. Validators vote (weighted by ReputationScoreManager)
+                              │
+                              ▼
+5. SupermajorityCalculator checks: 70% yes ≥ 66% threshold ✓
+                              │
+                              ▼
+6. ChallengeWindowManager waits 7 days for appeals
+                              │
+                              ▼
+7. ProposalExecutor triggers DynamicBasketRebalancer
+                              │
+                              ▼
+8. DynamicBasketRebalancer creates ASUSettlementTransaction
+                              │
+                              ▼
+9. TransactionManager includes transaction in next block
+                              │
+                              ▼
+10. BlockProcessor executes: Ghana 35%, Nigeria 35%, Kenya 15%, South Africa 15%
+                              │
+                              ▼
+11. StateManager updates world state
+                              │
+                              ▼
+12. GovernanceAuditLog records action permanently
+                              │
+                              ▼
+13. BroadcastManager notifies all shards of change
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+                    EMERGENCY SCENARIO: FOREIGN CURRENCY ATTACK
+═══════════════════════════════════════════════════════════════════════════════════
+
+1. FXExposureMonitor detects: USD exposure = 15% (exceeds 10% cap)
+                              │
+                              ▼
+2. ExposureCapManager triggers automatic CircuitBreaker
+                              │
+                              ├──> Halts SyntheticFXMinter (no new sUSD)
+                              ├──> Pauses ExternalStablecoinBridge (no USDC inflows)
+                              └──> Alerts EmergencyProposalManager
+                              │
+                              ▼
+3. EmergencyProposalManager creates fast-track proposal
+                              │
+                              ▼
+4. ThresholdSignatureManager collects 7 of 9 emergency signatures (within 1 hour)
+                              │
+                              ▼
+5. SupermajorityCalculator uses reduced threshold (51% for emergencies)
+                              │
+                              ▼
+6. ProposalExecutor executes emergency actions:
+   ├──> FXCollateralManager liquidates 5% USD exposure
+   ├──> DynamicBasketRebalancer increases ASU weight to 95%
+   └──> SanctionEnforcementEngine temporarily suspends foreign bridges
+                              │
+                              ▼
+7. GovernanceAuditLog records entire emergency response
+                              │
+                              ▼
+8. System returns to USD exposure = 8% (under 10% cap)
+                              │
+                              ▼
+9. CircuitBreaker auto-resumes normal operations after 24 hours
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+                        GEOGRAPHIC DISTRIBUTION ENFORCEMENT
+═══════════════════════════════════════════════════════════════════════════════════
+
+ContinentalDAO continuously monitors:
+
+GeographicDiversityChecker.calculateHerfindahlIndex() 
+  │
+  ├──> West Africa: 28% of validators (↓ from 35%)
+  ├──> Southern Africa: 25% of validators (↑ from 20%)
+  ├──> East Africa: 22% of validators (↑ from 18%)
+  ├──> North Africa: 15% of validators (stable)
+  └──> Central Africa: 10% of validators (stable)
+  │
+  └──> HHI = 0.28² + 0.25² + 0.22² + 0.15² + 0.10² = 0.2238
+       ✓ PASS (HHI < 0.33 = no region has >33% control)
+
+If West Africa tries to register validator #501 (would give them 34%):
+  │
+  └──> ValidatorGovernance.registerValidator() calls
+       GeographicDiversityChecker.wouldExceedLimit(West_Africa)
+       │
+       └──> REJECT: "Registration would violate geographic diversity (34% > 33%)"
+       
+
+═══════════════════════════════════════════════════════════════════════════════════
+                          IMPLEMENTATION DEPENDENCY GRAPH
+═══════════════════════════════════════════════════════════════════════════════════
+
+Level 0 (No governance dependencies):
+└─> GovernanceAuditLog.java
+
+Level 1 (Depends only on blockchain/banking):
+├─> SupermajorityCalculator.java
+└─> VotingDAO.java
+
+Level 2 (Depends on Level 1):
+├─> LocalDAO.java
+├─> ValidatorGovernance.java
+└─> FairRateAlgorithmConfig.java
+
+Level 3 (Depends on Level 2):
+├─> NationalDAO.java
+├─> EconomicPolicyRules.java
+└─> TreasuryGovernance.java
+
+Level 4 (Depends on Level 3):
+├─> ContinentalDAO.java
+└─> ExposureCapManager.java
+
+Level 5 (Depends on Level 4):
+├─> EmergencyProposalManager.java
+└─> ProposalExecutor.java
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+                              CRITICAL INTEGRATION NOTES
+═══════════════════════════════════════════════════════════════════════════════════
+
+🔴 THREAD SAFETY REQUIREMENTS:
+All governance components must use:
+- ConcurrentHashMap for proposal storage
+- ReentrantReadWriteLock for vote counting
+- AtomicLong for vote tracking
+- Synchronized blocks for state transitions
+
+🔴 TRANSACTION ORDERING:
+ProposalExecutor must respect dependency order:
+1. Sanction enforcement (if any)
+2. Reserve changes (if required)
+3. Economic policy updates
+4. Token minting adjustments
+5. State synchronization
+
+🔴 ROLLBACK SUPPORT:
+If proposal execution fails mid-way:
+1. StateManager.rollbackToCheckpoint()
+2. GovernanceAuditLog.recordFailure()
+3. VotingDAO.markProposalFailed()
+4. Refund any spent gas/fees
+
+🔴 SHARD COORDINATION:
+For cross-shard proposals, ContinentalDAO must:
+1. Collect votes from all 20 shards via RelayChainProtocol
+2. Aggregate using ShardCoordinator
+3. Execute atomically across all shards
+4. Rollback all shards if any fails
+
+🔴 EMERGENCY OVERRIDE:
+EmergencyProposalManager can bypass normal governance ONLY if:
+1. ThresholdSignatureManager has ≥7 of 9 signatures
+2. EmergencyShutdownProtocol is activated
+3. Threat is existential (system-wide failure imminent)
+4. Action is automatically reversed after 72 hours unless reconfirmed
+
+═══════════════════════════════════════════════════════════════════════════════════
+                                  END OF DIAGRAM
+═══════════════════════════════════════════════════════════════════════════════════
+```
+
+**SUMMARY**: 
+- 13 governance components
+- 67 blockchain core dependencies
+- 94 banking module dependencies
+- 161 total integration points
+- 5-level implementation hierarchy
+- Continental-scale distributed governance system
+
+This architecture ensures the TINC governance system is:
+✓ Decentralized (no single point of control)
+✓ Transparent (all actions logged immutably)
+✓ Fair (geographic distribution enforced)
+✓ Secure (multi-party approval required)
+✓ Resilient (emergency protocols + rollback support)
+✓ Scalable (cross-shard coordination)
