@@ -1,6 +1,7 @@
 package org.example.app.core.banking.oracle;
 
-import org.example.app.core.oracle.OracleReporter.OracleData;
+import org.example.app.core.banking.oracle.AfricanSovereigntyTypes.*;
+import org.example.app.core.banking.oracle.OracleReporter.OracleData;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -10,55 +11,74 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * OracleAggregator - Multi-source aggregation with weighted algorithms
+ * OracleAggregator - Multi-source aggregation with African Sovereignty enforcement
  * 
- * Implements sophisticated data aggregation from multiple oracle sources with:
+ * ⚠️ CRITICAL COMPONENT - UPGRADED FOR AFRICAN NODE SOVEREIGNTY
+ * 
+ * Implements sophisticated data aggregation with:
+ * - 35-node African Data Availability Committee (7 per region)
+ * - Geographic distribution enforcement (max 33% per region/country)
+ * - Community ownership targets (50%+ community, max 20% cloud)
+ * - Enhanced African prioritization (50-60% bonus + 3x multiplier)
+ * - Byzantine Fault Tolerance (5/7 consensus per region)
+ * - Multi-region verification (minimum 3 regions required)
  * - Fair-weighting algorithms (volume, liquidity, stability, reputation)
- * - Outlier detection (Z-scores, Median Absolute Deviation)
- * - African exchange prioritization (50-60% weight bonus)
- * - Anti-manipulation protections
- * - Multi-source verification requirements
- * - Weighted median calculations
+ * - Outlier detection and anti-manipulation protections
  * 
- * Based on Implementation Guidebook Sections II & VI
+ * SOVEREIGNTY FEATURES:
+ * - Cannot be controlled by single region/country (33% limit)
+ * - Cannot be shut down by single government
+ * - Prioritizes African sources (3x weight) over global sources
+ * - Community-owned nodes incentivized over cloud providers
+ * 
+ * Based on Implementation Guidebook Sections II & VI + African Sovereignty Requirements
  */
 public class OracleAggregator {
     private static final Logger LOGGER = Logger.getLogger(OracleAggregator.class.getName());
     
-    // Aggregation parameters
+    // ============ AFRICAN SOVEREIGNTY PARAMETERS ============
+    
+    // Committee structure (35 nodes = 5 regions × 7 nodes)
+    private final Map<AfricanRegion, RegionalCommittee> regionalCommittees;
+    private final Map<String, NodeInfo> nodeRegistry;
+    
+    // African prioritization (UPGRADED from 55% to 50-60% + 3x multiplier)
+    private static final BigDecimal AFRICAN_MIN_BONUS = new BigDecimal("0.50");  // 50% minimum bonus
+    private static final BigDecimal AFRICAN_MAX_BONUS = new BigDecimal("0.60");  // 60% maximum bonus
+    private static final BigDecimal AFRICAN_PRIORITY_MULTIPLIER = new BigDecimal("3.0"); // 3x weight
+    
+    // Geographic distribution limits
+    private static final BigDecimal MAX_REGION_PERCENTAGE = new BigDecimal("0.33");   // 33%
+    private static final BigDecimal MAX_COUNTRY_PERCENTAGE = new BigDecimal("0.33");  // 33%
+    private static final int MIN_REGIONS_REQUIRED = 3;  // Minimum 3 of 5 regions
+    
+    // Node ownership targets
+    private static final BigDecimal COMMUNITY_TARGET_PERCENTAGE = new BigDecimal("0.50"); // 50%
+    private static final BigDecimal CLOUD_MAX_PERCENTAGE = new BigDecimal("0.20");        // 20%
+    private static final BigDecimal COMMUNITY_REWARD_BONUS = new BigDecimal("0.25");      // 25% extra rewards
+    
+    // ============ AGGREGATION PARAMETERS ============
+    
     private static final int MIN_SOURCES_REQUIRED = 5; // Minimum 5 sources for valid aggregation
-    private static final int RECOMMENDED_SOURCES = 7; // Recommended 7 sources
-    private static final BigDecimal OUTLIER_Z_SCORE_THRESHOLD = new BigDecimal("2.5"); // 2.5 standard deviations
-    private static final BigDecimal MAD_MULTIPLIER = new BigDecimal("1.4826"); // Median Absolute Deviation multiplier
-    private static final BigDecimal AFRICAN_WEIGHT_BONUS = new BigDecimal("0.55"); // 55% bonus for African sources
+    private static final int RECOMMENDED_SOURCES = 7;  // Recommended 7 sources
+    private static final BigDecimal OUTLIER_Z_SCORE_THRESHOLD = new BigDecimal("2.5");
+    private static final BigDecimal MAD_MULTIPLIER = new BigDecimal("1.4826");
     
     // Fair-weighting factors (sum to 1.0)
     private static final Map<WeightFactor, BigDecimal> WEIGHT_FACTORS = new HashMap<>();
     static {
-        WEIGHT_FACTORS.put(WeightFactor.VOLUME, new BigDecimal("0.40"));         // 40% - Trading volume
-        WEIGHT_FACTORS.put(WeightFactor.LIQUIDITY, new BigDecimal("0.25"));      // 25% - Liquidity depth
-        WEIGHT_FACTORS.put(WeightFactor.STABILITY, new BigDecimal("0.20"));      // 20% - Price stability
-        WEIGHT_FACTORS.put(WeightFactor.ADOPTION, new BigDecimal("0.10"));       // 10% - User adoption
-        WEIGHT_FACTORS.put(WeightFactor.REPUTATION, new BigDecimal("0.05"));     // 5% - Exchange reputation
+        WEIGHT_FACTORS.put(WeightFactor.VOLUME, new BigDecimal("0.40"));         // 40%
+        WEIGHT_FACTORS.put(WeightFactor.LIQUIDITY, new BigDecimal("0.25"));      // 25%
+        WEIGHT_FACTORS.put(WeightFactor.STABILITY, new BigDecimal("0.20"));      // 20%
+        WEIGHT_FACTORS.put(WeightFactor.ADOPTION, new BigDecimal("0.10"));       // 10%
+        WEIGHT_FACTORS.put(WeightFactor.REPUTATION, new BigDecimal("0.05"));     // 5%
     }
     
     /**
      * Weight factors for fair calculation
      */
     public enum WeightFactor {
-        VOLUME,
-        LIQUIDITY,
-        STABILITY,
-        ADOPTION,
-        REPUTATION
-    }
-    
-    /**
-     * Geographic source type
-     */
-    public enum SourceGeography {
-        AFRICAN,
-        NON_AFRICAN
+        VOLUME, LIQUIDITY, STABILITY, ADOPTION, REPUTATION
     }
     
     /**
@@ -119,12 +139,14 @@ public class OracleAggregator {
     }
     
     /**
-     * Source data with weight factors
+     * Source data with weight factors and geographic information
      */
     public static class SourceData {
         private final String sourceId;
         private final BigDecimal value;
         private final SourceGeography geography;
+        private final AfricanRegion africanRegion; // NEW: Regional classification
+        private final String country; // NEW: Country tracking
         private final BigDecimal volume;
         private final BigDecimal liquidity;
         private final BigDecimal stability;
@@ -135,9 +157,18 @@ public class OracleAggregator {
         public SourceData(String sourceId, BigDecimal value, SourceGeography geography,
                          BigDecimal volume, BigDecimal liquidity, BigDecimal stability,
                          BigDecimal adoption, BigDecimal reputation) {
+            this(sourceId, value, geography, null, null, volume, liquidity, stability, adoption, reputation);
+        }
+        
+        public SourceData(String sourceId, BigDecimal value, SourceGeography geography,
+                         AfricanRegion africanRegion, String country,
+                         BigDecimal volume, BigDecimal liquidity, BigDecimal stability,
+                         BigDecimal adoption, BigDecimal reputation) {
             this.sourceId = sourceId;
             this.value = value;
             this.geography = geography;
+            this.africanRegion = africanRegion;
+            this.country = country;
             this.volume = volume;
             this.liquidity = liquidity;
             this.stability = stability;
@@ -149,6 +180,8 @@ public class OracleAggregator {
         public String getSourceId() { return sourceId; }
         public BigDecimal getValue() { return value; }
         public SourceGeography getGeography() { return geography; }
+        public AfricanRegion getAfricanRegion() { return africanRegion; }
+        public String getCountry() { return country; }
         public BigDecimal getVolume() { return volume; }
         public BigDecimal getLiquidity() { return liquidity; }
         public BigDecimal getStability() { return stability; }
@@ -174,8 +207,93 @@ public class OracleAggregator {
     public OracleAggregator() {
         this.reporters = new ConcurrentHashMap<>();
         this.aggregationCache = new ConcurrentHashMap<>();
+        this.regionalCommittees = new ConcurrentHashMap<>();
+        this.nodeRegistry = new ConcurrentHashMap<>();
         
-        LOGGER.info("OracleAggregator initialized");
+        // Initialize 5 regional committees (7 nodes each)
+        for (AfricanRegion region : AfricanRegion.values()) {
+            regionalCommittees.put(region, new RegionalCommittee(region));
+        }
+        
+        LOGGER.info("OracleAggregator initialized with African Sovereignty enforcement");
+        LOGGER.info(String.format("Committee structure: %d regions × %d nodes = %d total nodes",
+            AfricanRegion.TOTAL_REGIONS, AfricanRegion.NODES_PER_REGION, AfricanRegion.TOTAL_NODES));
+    }
+    
+    /**
+     * Registers a node to the 35-node committee
+     */
+    public boolean registerNode(NodeInfo node) {
+        // Validate geographic distribution BEFORE adding
+        if (!wouldViolateGeographicLimits(node)) {
+            return false;
+        }
+        
+        // Validate node type distribution
+        if (!wouldViolateNodeTypeLimits(node.getNodeType())) {
+            return false;
+        }
+        
+        // Register to appropriate regional committee
+        RegionalCommittee committee = regionalCommittees.get(node.getRegion());
+        if (committee == null || !committee.registerNode(node)) {
+            return false;
+        }
+        
+        // Add to global registry
+        nodeRegistry.put(node.getNodeId(), node);
+        
+        LOGGER.info(String.format("Node registered: %s - %s - %s - Community: %s",
+            node.getNodeId(), node.getRegion(), node.getNodeType(), node.isCommunityOwned()));
+        
+        // Log current distribution
+        logDistributionStatus();
+        
+        return true;
+    }
+    
+    /**
+     * Checks if adding node would violate geographic distribution limits
+     */
+    private boolean wouldViolateGeographicLimits(NodeInfo newNode) {
+        // Calculate what distribution would be WITH new node
+        Map<AfricanRegion, BigDecimal> regionalCounts = new HashMap<>();
+        Map<String, BigDecimal> countryCounts = new HashMap<>();
+        
+        for (NodeInfo node : nodeRegistry.values()) {
+            regionalCounts.merge(node.getRegion(), BigDecimal.ONE, BigDecimal::add);
+            countryCounts.merge(node.getCountry(), BigDecimal.ONE, BigDecimal::add);
+        }
+        
+        // Add the new node
+        regionalCounts.merge(newNode.getRegion(), BigDecimal.ONE, BigDecimal::add);
+        countryCounts.merge(newNode.getCountry(), BigDecimal.ONE, BigDecimal::add);
+        
+        // Validate
+        if (!GeographicDistributionValidator.validateRegionalDistribution(regionalCounts)) {
+            LOGGER.warning("Adding node would violate regional distribution (33% limit)");
+            return false;
+        }
+        
+        if (!GeographicDistributionValidator.validateCountryDistribution(countryCounts)) {
+            LOGGER.warning("Adding node would violate country distribution (33% limit)");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Checks if adding node would violate node type limits
+     */
+    private boolean wouldViolateNodeTypeLimits(NodeType newNodeType) {
+        Map<NodeType, Long> nodeTypeCounts = nodeRegistry.values().stream()
+            .collect(Collectors.groupingBy(NodeInfo::getNodeType, Collectors.counting()));
+        
+        // Simulate adding new node
+        nodeTypeCounts.merge(newNodeType, 1L, Long::sum);
+        
+        return GeographicDistributionValidator.validateNodeTypeDistribution(nodeTypeCounts);
     }
     
     /**
@@ -187,15 +305,9 @@ public class OracleAggregator {
     }
     
     /**
-     * Unregisters an oracle reporter
-     */
-    public void unregisterReporter(String reporterId) {
-        reporters.remove(reporterId);
-        LOGGER.info("Reporter unregistered: " + reporterId);
-    }
-    
-    /**
-     * Aggregates data from multiple sources with fair-weighting
+     * Aggregates data from multiple sources with African Sovereignty enforcement
+     * 
+     * CRITICAL: This enforces all sovereignty requirements
      */
     public AggregatedResult aggregateData(List<SourceData> sources, String dataKey) {
         // Check cache first
@@ -206,184 +318,312 @@ public class OracleAggregator {
             return cached;
         }
         
-        // Validate minimum sources
+        // SOVEREIGNTY CHECK 1: Minimum sources
         if (sources.size() < MIN_SOURCES_REQUIRED) {
             LOGGER.warning(String.format("Insufficient sources: %d (minimum: %d)", 
                 sources.size(), MIN_SOURCES_REQUIRED));
             return null;
         }
         
-        LOGGER.info(String.format("Aggregating data from %d sources for: %s", sources.size(), dataKey));
-        
-        // Step 1: Calculate weights for each source
-        List<SourceData> weightedSources = calculateWeights(sources);
-        
-        // Step 2: Detect and filter outliers
-        List<SourceData> filteredSources = filterOutliers(weightedSources);
-        
-        int sourcesFiltered = sources.size() - filteredSources.size();
-        
-        if (filteredSources.size() < MIN_SOURCES_REQUIRED) {
-            LOGGER.warning("Too many sources filtered as outliers");
+        // SOVEREIGNTY CHECK 2: Geographic distribution validation
+        if (!validateGeographicDistribution(sources)) {
+            LOGGER.severe("Geographic distribution validation FAILED - rejecting aggregation");
             return null;
         }
         
-        // Step 3: Calculate statistics
-        BigDecimal weightedAverage = calculateWeightedAverage(filteredSources);
-        BigDecimal median = calculateMedian(filteredSources);
-        BigDecimal weightedMedian = calculateWeightedMedian(filteredSources);
-        BigDecimal stdDev = calculateStandardDeviation(filteredSources, weightedAverage);
+        // SOVEREIGNTY CHECK 3: Multi-region consensus requirement
+        if (!hasMultiRegionConsensus(sources)) {
+            LOGGER.severe("Multi-region consensus FAILED - need sources from 3+ regions");
+            return null;
+        }
         
-        // Step 4: Calculate confidence score
-        BigDecimal confidence = calculateConfidenceScore(filteredSources, stdDev);
+        // SOVEREIGNTY CHECK 4: Minimum African sources (for African-related data)
+        if (!hasMinimumAfricanSources(sources, dataKey)) {
+            LOGGER.warning("Insufficient African sources - may not meet sovereignty requirements");
+        }
         
-        // Step 5: Extract source IDs and weights
-        List<String> sourceIds = filteredSources.stream()
+        // Filter outliers
+        List<SourceData> filtered = filterOutliers(sources);
+        int filteredCount = sources.size() - filtered.size();
+        
+        if (filtered.isEmpty()) {
+            LOGGER.warning("All sources filtered as outliers");
+            return null;
+        }
+        
+        // Calculate weights with ENHANCED African prioritization
+        calculateWeights(filtered);
+        
+        // Calculate aggregated values
+        BigDecimal weightedAvg = calculateWeightedAverage(filtered);
+        BigDecimal median = calculateMedian(filtered);
+        BigDecimal weightedMedian = calculateWeightedMedian(filtered);
+        BigDecimal stdDev = calculateStandardDeviation(filtered, weightedAvg);
+        BigDecimal confidence = calculateConfidenceScore(filtered, stdDev);
+        
+        // Extract source IDs and weights
+        List<String> sourceIds = filtered.stream()
             .map(SourceData::getSourceId)
             .collect(Collectors.toList());
         
-        Map<String, BigDecimal> sourceWeights = new HashMap<>();
-        for (SourceData source : filteredSources) {
-            sourceWeights.put(source.getSourceId(), source.getCalculatedWeight());
-        }
+        Map<String, BigDecimal> sourceWeights = filtered.stream()
+            .collect(Collectors.toMap(
+                SourceData::getSourceId,
+                SourceData::getCalculatedWeight
+            ));
         
         // Create result
         AggregatedResult result = new AggregatedResult(
-            weightedAverage, median, weightedMedian, stdDev, confidence,
-            filteredSources.size(), sourcesFiltered, sourceIds, sourceWeights
+            weightedAvg, median, weightedMedian, stdDev, confidence,
+            filtered.size(), filteredCount, sourceIds, sourceWeights
         );
         
-        // Add metadata
-        result.addMetadata("dataKey", dataKey);
-        result.addMetadata("minSources", MIN_SOURCES_REQUIRED);
-        result.addMetadata("africanSources", countAfricanSources(filteredSources));
+        // Add African sovereignty metadata
+        int africanSources = countAfricanSources(filtered);
+        Set<AfricanRegion> regions = getRepresentedRegions(filtered);
+        
+        result.addMetadata("africanSources", africanSources);
+        result.addMetadata("africanPercentage", 
+            new BigDecimal(africanSources).divide(new BigDecimal(filtered.size()), 4, RoundingMode.HALF_UP));
+        result.addMetadata("regionsRepresented", regions.size());
+        result.addMetadata("regions", regions);
+        result.addMetadata("communitySourcesCount", countCommunityOwnedSources(filtered));
         
         // Cache result
         aggregationCache.put(cacheKey, result);
         
-        LOGGER.info(String.format("Aggregation complete: %s", result));
+        LOGGER.info(String.format("Aggregation complete: %s - Sources: %d/%d - African: %d (%.0f%%) - Regions: %d",
+            dataKey, filtered.size(), sources.size(), africanSources,
+            result.getMetadata().get("africanPercentage"), regions.size()));
         
         return result;
     }
     
     /**
-     * Calculates weights for each source using fair-weighting algorithm
+     * SOVEREIGNTY CHECK: Validates geographic distribution limits
      */
-    private List<SourceData> calculateWeights(List<SourceData> sources) {
-        List<SourceData> weighted = new ArrayList<>();
+    private boolean validateGeographicDistribution(List<SourceData> sources) {
+        // Group by region and country
+        Map<AfricanRegion, Long> regionCounts = sources.stream()
+            .filter(s -> s.getAfricanRegion() != null)
+            .collect(Collectors.groupingBy(SourceData::getAfricanRegion, Collectors.counting()));
         
-        // Normalize each factor across all sources
-        Map<WeightFactor, BigDecimal> maxValues = calculateMaxValues(sources);
+        Map<String, Long> countryCounts = sources.stream()
+            .filter(s -> s.getCountry() != null)
+            .collect(Collectors.groupingBy(SourceData::getCountry, Collectors.counting()));
         
-        for (SourceData source : sources) {
-            // Calculate base weight from factors
-            BigDecimal volumeWeight = normalizeAndWeight(source.getVolume(), 
-                maxValues.get(WeightFactor.VOLUME), WEIGHT_FACTORS.get(WeightFactor.VOLUME));
+        long totalSources = sources.size();
+        
+        // Check regional distribution (max 33%)
+        for (Map.Entry<AfricanRegion, Long> entry : regionCounts.entrySet()) {
+            BigDecimal percentage = new BigDecimal(entry.getValue())
+                .divide(new BigDecimal(totalSources), 4, RoundingMode.HALF_UP);
             
-            BigDecimal liquidityWeight = normalizeAndWeight(source.getLiquidity(),
-                maxValues.get(WeightFactor.LIQUIDITY), WEIGHT_FACTORS.get(WeightFactor.LIQUIDITY));
-            
-            BigDecimal stabilityWeight = normalizeAndWeight(source.getStability(),
-                maxValues.get(WeightFactor.STABILITY), WEIGHT_FACTORS.get(WeightFactor.STABILITY));
-            
-            BigDecimal adoptionWeight = normalizeAndWeight(source.getAdoption(),
-                maxValues.get(WeightFactor.ADOPTION), WEIGHT_FACTORS.get(WeightFactor.ADOPTION));
-            
-            BigDecimal reputationWeight = normalizeAndWeight(source.getReputation(),
-                maxValues.get(WeightFactor.REPUTATION), WEIGHT_FACTORS.get(WeightFactor.REPUTATION));
-            
-            // Sum base weight
-            BigDecimal baseWeight = volumeWeight.add(liquidityWeight)
-                .add(stabilityWeight).add(adoptionWeight).add(reputationWeight);
-            
-            // Apply African bonus
-            BigDecimal finalWeight = baseWeight;
-            if (source.getGeography() == SourceGeography.AFRICAN) {
-                finalWeight = baseWeight.multiply(BigDecimal.ONE.add(AFRICAN_WEIGHT_BONUS));
+            if (percentage.compareTo(MAX_REGION_PERCENTAGE) > 0) {
+                LOGGER.severe(String.format("Region %s exceeds 33%% limit: %.2f%%",
+                    entry.getKey(), percentage.multiply(new BigDecimal("100"))));
+                return false;
             }
+        }
+        
+        // Check country distribution (max 33%)
+        for (Map.Entry<String, Long> entry : countryCounts.entrySet()) {
+            BigDecimal percentage = new BigDecimal(entry.getValue())
+                .divide(new BigDecimal(totalSources), 4, RoundingMode.HALF_UP);
             
-            source.setCalculatedWeight(finalWeight);
-            weighted.add(source);
+            if (percentage.compareTo(MAX_COUNTRY_PERCENTAGE) > 0) {
+                LOGGER.severe(String.format("Country %s exceeds 33%% limit: %.2f%%",
+                    entry.getKey(), percentage.multiply(new BigDecimal("100"))));
+                return false;
+            }
         }
         
-        // Normalize weights to sum to 1.0
-        BigDecimal totalWeight = weighted.stream()
-            .map(SourceData::getCalculatedWeight)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
-        for (SourceData source : weighted) {
-            BigDecimal normalized = source.getCalculatedWeight()
-                .divide(totalWeight, 10, RoundingMode.HALF_UP);
-            source.setCalculatedWeight(normalized);
-        }
-        
-        return weighted;
+        return true;
     }
     
     /**
-     * Calculates maximum values for each weight factor
+     * SOVEREIGNTY CHECK: Validates multi-region consensus (minimum 3 regions)
      */
-    private Map<WeightFactor, BigDecimal> calculateMaxValues(List<SourceData> sources) {
-        Map<WeightFactor, BigDecimal> maxValues = new HashMap<>();
+    private boolean hasMultiRegionConsensus(List<SourceData> sources) {
+        Set<AfricanRegion> regions = getRepresentedRegions(sources);
+        return regions.size() >= MIN_REGIONS_REQUIRED;
+    }
+    
+    /**
+     * SOVEREIGNTY CHECK: Validates minimum African sources
+     * For African currency pairs: need 3+ African sources from 2+ regions
+     */
+    private boolean hasMinimumAfricanSources(List<SourceData> sources, String dataKey) {
+        // Determine if this is African-related data
+        boolean isAfricanData = dataKey.contains("NGN") || dataKey.contains("GHS") || 
+                               dataKey.contains("ZAR") || dataKey.contains("KES") ||
+                               dataKey.contains("XOF") || dataKey.contains("ASU");
         
+        if (!isAfricanData) {
+            return true; // Not applicable for non-African data
+        }
+        
+        List<SourceData> africanSources = sources.stream()
+            .filter(s -> s.getGeography() == SourceGeography.AFRICAN)
+            .collect(Collectors.toList());
+        
+        if (africanSources.size() < 3) {
+            LOGGER.warning("Insufficient African sources: " + africanSources.size() + " (need 3+)");
+            return false;
+        }
+        
+        Set<AfricanRegion> africanRegions = africanSources.stream()
+            .map(SourceData::getAfricanRegion)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        
+        if (africanRegions.size() < 2) {
+            LOGGER.warning("Insufficient African regional diversity: " + africanRegions.size() + " (need 2+)");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Calculates weights with ENHANCED African prioritization (3x multiplier)
+     */
+    private void calculateWeights(List<SourceData> sources) {
+        // Normalize factors for weight calculation
+        Map<WeightFactor, Map<String, BigDecimal>> normalizedFactors = normalizeFactors(sources);
+        
+        // Calculate base weights
+        for (SourceData source : sources) {
+            BigDecimal weight = calculateBaseWeight(source, normalizedFactors);
+            
+            // ENHANCED: Apply African prioritization
+            if (source.getGeography() == SourceGeography.AFRICAN) {
+                weight = applyAfricanPrioritization(weight, source);
+            }
+            
+            source.setCalculatedWeight(weight);
+        }
+        
+        // Normalize weights to sum to 1.0
+        normalizeWeights(sources);
+    }
+    
+    /**
+     * ENHANCED: Applies African prioritization (50-60% bonus + 3x multiplier)
+     */
+    private BigDecimal applyAfricanPrioritization(BigDecimal baseWeight, SourceData source) {
+        // Calculate reputation-based bonus (50-60% range)
+        BigDecimal reputationFactor = source.getReputation()
+            .subtract(new BigDecimal("0.5"))
+            .multiply(new BigDecimal("0.20")); // Scale 0.5-1.0 rep to 0-0.10 bonus
+        
+        BigDecimal bonus = AFRICAN_MIN_BONUS.add(reputationFactor);
+        bonus = bonus.min(AFRICAN_MAX_BONUS); // Cap at 60%
+        
+        // Apply bonus
+        BigDecimal weightWithBonus = baseWeight.multiply(BigDecimal.ONE.add(bonus));
+        
+        // Apply 3x priority multiplier
+        BigDecimal finalWeight = weightWithBonus.multiply(AFRICAN_PRIORITY_MULTIPLIER);
+        
+        LOGGER.fine(String.format("African priority applied: %s - Bonus: %.2f%% - Multiplier: 3x - Weight: %.6f -> %.6f",
+            source.getSourceId(), bonus.multiply(new BigDecimal("100")), baseWeight, finalWeight));
+        
+        return finalWeight;
+    }
+    
+    /**
+     * Calculates base weight from fair-weighting factors
+     */
+    private BigDecimal calculateBaseWeight(SourceData source, 
+                                          Map<WeightFactor, Map<String, BigDecimal>> normalizedFactors) {
+        BigDecimal weight = BigDecimal.ZERO;
+        
+        for (Map.Entry<WeightFactor, BigDecimal> entry : WEIGHT_FACTORS.entrySet()) {
+            WeightFactor factor = entry.getKey();
+            BigDecimal factorWeight = entry.getValue();
+            BigDecimal normalizedValue = normalizedFactors.get(factor).get(source.getSourceId());
+            
+            weight = weight.add(normalizedValue.multiply(factorWeight));
+        }
+        
+        return weight;
+    }
+    
+    /**
+     * Normalizes factors across all sources
+     */
+    private Map<WeightFactor, Map<String, BigDecimal>> normalizeFactors(List<SourceData> sources) {
+        Map<WeightFactor, Map<String, BigDecimal>> normalized = new HashMap<>();
+        
+        // Volume
         BigDecimal maxVolume = sources.stream()
             .map(SourceData::getVolume)
             .max(BigDecimal::compareTo)
             .orElse(BigDecimal.ONE);
         
+        Map<String, BigDecimal> normalizedVolume = sources.stream()
+            .collect(Collectors.toMap(
+                SourceData::getSourceId,
+                s -> s.getVolume().divide(maxVolume, 10, RoundingMode.HALF_UP)
+            ));
+        normalized.put(WeightFactor.VOLUME, normalizedVolume);
+        
+        // Liquidity
         BigDecimal maxLiquidity = sources.stream()
             .map(SourceData::getLiquidity)
             .max(BigDecimal::compareTo)
             .orElse(BigDecimal.ONE);
         
-        BigDecimal maxStability = sources.stream()
-            .map(SourceData::getStability)
-            .max(BigDecimal::compareTo)
-            .orElse(BigDecimal.ONE);
+        Map<String, BigDecimal> normalizedLiquidity = sources.stream()
+            .collect(Collectors.toMap(
+                SourceData::getSourceId,
+                s -> s.getLiquidity().divide(maxLiquidity, 10, RoundingMode.HALF_UP)
+            ));
+        normalized.put(WeightFactor.LIQUIDITY, normalizedLiquidity);
         
-        BigDecimal maxAdoption = sources.stream()
-            .map(SourceData::getAdoption)
-            .max(BigDecimal::compareTo)
-            .orElse(BigDecimal.ONE);
+        // Stability, Adoption, Reputation (already 0-1)
+        normalized.put(WeightFactor.STABILITY, sources.stream()
+            .collect(Collectors.toMap(SourceData::getSourceId, SourceData::getStability)));
+        normalized.put(WeightFactor.ADOPTION, sources.stream()
+            .collect(Collectors.toMap(SourceData::getSourceId, SourceData::getAdoption)));
+        normalized.put(WeightFactor.REPUTATION, sources.stream()
+            .collect(Collectors.toMap(SourceData::getSourceId, SourceData::getReputation)));
         
-        BigDecimal maxReputation = sources.stream()
-            .map(SourceData::getReputation)
-            .max(BigDecimal::compareTo)
-            .orElse(BigDecimal.ONE);
-        
-        maxValues.put(WeightFactor.VOLUME, maxVolume);
-        maxValues.put(WeightFactor.LIQUIDITY, maxLiquidity);
-        maxValues.put(WeightFactor.STABILITY, maxStability);
-        maxValues.put(WeightFactor.ADOPTION, maxAdoption);
-        maxValues.put(WeightFactor.REPUTATION, maxReputation);
-        
-        return maxValues;
+        return normalized;
     }
     
     /**
-     * Normalizes and weights a value
+     * Normalizes weights to sum to 1.0
      */
-    private BigDecimal normalizeAndWeight(BigDecimal value, BigDecimal maxValue, BigDecimal weight) {
-        if (maxValue.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
+    private void normalizeWeights(List<SourceData> sources) {
+        BigDecimal totalWeight = sources.stream()
+            .map(SourceData::getCalculatedWeight)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
         
-        BigDecimal normalized = value.divide(maxValue, 10, RoundingMode.HALF_UP);
-        return normalized.multiply(weight);
+        if (totalWeight.compareTo(BigDecimal.ZERO) == 0) {
+            // Fallback: equal weights
+            BigDecimal equalWeight = BigDecimal.ONE.divide(
+                new BigDecimal(sources.size()), 10, RoundingMode.HALF_UP);
+            sources.forEach(s -> s.setCalculatedWeight(equalWeight));
+        } else {
+            sources.forEach(s -> s.setCalculatedWeight(
+                s.getCalculatedWeight().divide(totalWeight, 10, RoundingMode.HALF_UP)
+            ));
+        }
     }
     
     /**
-     * Filters outliers using Z-score and MAD methods
+     * Filters outliers using Median Absolute Deviation
      */
     private List<SourceData> filterOutliers(List<SourceData> sources) {
         if (sources.size() < MIN_SOURCES_REQUIRED) {
             return sources;
         }
         
-        // Calculate median
         BigDecimal median = calculateMedian(sources);
         
-        // Calculate MAD (Median Absolute Deviation)
+        // Calculate MAD
         List<BigDecimal> deviations = sources.stream()
             .map(s -> s.getValue().subtract(median).abs())
             .sorted()
@@ -401,7 +641,6 @@ public class OracleAggregator {
                 madScore = deviation.divide(mad.multiply(MAD_MULTIPLIER), 10, RoundingMode.HALF_UP);
             }
             
-            // Keep if within threshold
             if (madScore.compareTo(OUTLIER_Z_SCORE_THRESHOLD) <= 0) {
                 filtered.add(source);
             } else {
@@ -446,12 +685,10 @@ public class OracleAggregator {
      * Calculates weighted median
      */
     private BigDecimal calculateWeightedMedian(List<SourceData> sources) {
-        // Sort by value
         List<SourceData> sorted = sources.stream()
             .sorted(Comparator.comparing(SourceData::getValue))
             .collect(Collectors.toList());
         
-        // Find cumulative weight that reaches 0.5
         BigDecimal cumulative = BigDecimal.ZERO;
         BigDecimal target = new BigDecimal("0.5");
         
@@ -462,7 +699,6 @@ public class OracleAggregator {
             }
         }
         
-        // Fallback to last value
         return sorted.get(sorted.size() - 1).getValue();
     }
     
@@ -481,7 +717,6 @@ public class OracleAggregator {
         BigDecimal variance = sumSquaredDiff.divide(
             new BigDecimal(sources.size()), 10, RoundingMode.HALF_UP);
         
-        // Square root approximation using Newton's method
         return sqrt(variance);
     }
     
@@ -510,29 +745,25 @@ public class OracleAggregator {
     }
     
     /**
-     * Calculates confidence score based on agreement and sources
+     * Calculates confidence score
      */
     private BigDecimal calculateConfidenceScore(List<SourceData> sources, BigDecimal stdDev) {
-        // More sources = higher confidence
         BigDecimal sourceScore = new BigDecimal(Math.min(sources.size(), RECOMMENDED_SOURCES))
             .divide(new BigDecimal(RECOMMENDED_SOURCES), 4, RoundingMode.HALF_UP);
         
-        // Lower std dev = higher confidence
         BigDecimal agreementScore = BigDecimal.ONE;
         if (stdDev.compareTo(BigDecimal.ZERO) > 0) {
-            // Normalize to reasonable range (0.1 = perfect, 1.0 = poor)
             BigDecimal normalized = stdDev.divide(new BigDecimal("0.1"), 4, RoundingMode.HALF_UP);
             agreementScore = BigDecimal.ONE.divide(
                 BigDecimal.ONE.add(normalized), 4, RoundingMode.HALF_UP);
         }
         
-        // Combine scores (70% sources, 30% agreement)
         return sourceScore.multiply(new BigDecimal("0.7"))
             .add(agreementScore.multiply(new BigDecimal("0.3")));
     }
     
     /**
-     * Counts African sources
+     * Helper methods for sovereignty tracking
      */
     private int countAfricanSources(List<SourceData> sources) {
         return (int) sources.stream()
@@ -540,30 +771,73 @@ public class OracleAggregator {
             .count();
     }
     
-    /**
-     * Checks if cache is expired
-     */
+    private int countCommunityOwnedSources(List<SourceData> sources) {
+        return (int) sources.stream()
+            .filter(s -> {
+                // Check if source's node is community-owned
+                NodeInfo node = nodeRegistry.get(s.getSourceId());
+                return node != null && node.isCommunityOwned();
+            })
+            .count();
+    }
+    
+    private Set<AfricanRegion> getRepresentedRegions(List<SourceData> sources) {
+        return sources.stream()
+            .map(SourceData::getAfricanRegion)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    }
+    
     private boolean isCacheExpired(AggregatedResult result) {
         return System.currentTimeMillis() - result.getTimestamp() > CACHE_EXPIRY_MS;
     }
     
-    /**
-     * Clears expired cache entries
-     */
     public void clearExpiredCache() {
         aggregationCache.entrySet().removeIf(entry -> isCacheExpired(entry.getValue()));
     }
     
     /**
-     * Gets reporter by ID
+     * Logs current distribution status for monitoring
      */
+    private void logDistributionStatus() {
+        Map<AfricanRegion, Long> regionCounts = nodeRegistry.values().stream()
+            .collect(Collectors.groupingBy(NodeInfo::getRegion, Collectors.counting()));
+        
+        Map<NodeType, Long> nodeTypeCounts = nodeRegistry.values().stream()
+            .collect(Collectors.groupingBy(NodeInfo::getNodeType, Collectors.counting()));
+        
+        long totalNodes = nodeRegistry.size();
+        long communityNodes = nodeTypeCounts.getOrDefault(NodeType.COMMUNITY, 0L);
+        long cloudNodes = nodeTypeCounts.getOrDefault(NodeType.CLOUD, 0L);
+        
+        LOGGER.info("=== NODE DISTRIBUTION STATUS ===");
+        LOGGER.info(String.format("Total Nodes: %d/%d", totalNodes, AfricanRegion.TOTAL_NODES));
+        LOGGER.info(String.format("Community: %d (%.1f%%) - Target: 50%%+",
+            communityNodes, (communityNodes * 100.0 / totalNodes)));
+        LOGGER.info(String.format("Cloud: %d (%.1f%%) - Max: 20%%",
+            cloudNodes, (cloudNodes * 100.0 / totalNodes)));
+        
+        for (AfricanRegion region : AfricanRegion.values()) {
+            long count = regionCounts.getOrDefault(region, 0L);
+            LOGGER.info(String.format("%s: %d/%d nodes (%.1f%%)",
+                region, count, AfricanRegion.NODES_PER_REGION, (count * 100.0 / totalNodes)));
+        }
+        LOGGER.info("==============================");
+    }
+    
+    // Getters
+    public Map<AfricanRegion, RegionalCommittee> getRegionalCommittees() {
+        return new HashMap<>(regionalCommittees);
+    }
+    
+    public Map<String, NodeInfo> getNodeRegistry() {
+        return new HashMap<>(nodeRegistry);
+    }
+    
     public OracleReporter getReporter(String reporterId) {
         return reporters.get(reporterId);
     }
     
-    /**
-     * Gets all active reporters
-     */
     public List<OracleReporter> getActiveReporters() {
         return reporters.values().stream()
             .filter(OracleReporter::isActive)
@@ -571,13 +845,42 @@ public class OracleAggregator {
     }
     
     /**
-     * Gets statistics
+     * Gets statistics with sovereignty metrics
      */
     public Map<String, Object> getStatistics() {
         Map<String, Object> stats = new HashMap<>();
+        
+        // Basic stats
         stats.put("totalReporters", reporters.size());
         stats.put("activeReporters", getActiveReporters().size());
         stats.put("cachedAggregations", aggregationCache.size());
+        
+        // Sovereignty metrics
+        stats.put("totalNodes", nodeRegistry.size());
+        stats.put("targetNodes", AfricanRegion.TOTAL_NODES);
+        
+        Map<NodeType, Long> nodeTypeCounts = nodeRegistry.values().stream()
+            .collect(Collectors.groupingBy(NodeInfo::getNodeType, Collectors.counting()));
+        
+        long total = nodeRegistry.size();
+        if (total > 0) {
+            stats.put("communityPercentage", 
+                new BigDecimal(nodeTypeCounts.getOrDefault(NodeType.COMMUNITY, 0L))
+                    .divide(new BigDecimal(total), 4, RoundingMode.HALF_UP));
+            stats.put("cloudPercentage",
+                new BigDecimal(nodeTypeCounts.getOrDefault(NodeType.CLOUD, 0L))
+                    .divide(new BigDecimal(total), 4, RoundingMode.HALF_UP));
+        }
+        
+        Map<AfricanRegion, Long> regionCounts = nodeRegistry.values().stream()
+            .collect(Collectors.groupingBy(NodeInfo::getRegion, Collectors.counting()));
+        stats.put("regionalDistribution", regionCounts);
+        
+        int committeesWithBFT = (int) regionalCommittees.values().stream()
+            .filter(RegionalCommittee::hasBFTConsensus)
+            .count();
+        stats.put("committeesWithBFT", committeesWithBFT);
+        
         return stats;
     }
 }

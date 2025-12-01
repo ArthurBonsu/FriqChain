@@ -5,19 +5,62 @@ import org.example.app.core.types.Amount;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * CrossShardTransaction enables transactions across blockchain shards,
+ * CrossShardTransaction enables transactions across blockchain shards with African sovereignty enforcement,
  * critical for scaling the African Tokenized Currency System to 1.2 billion users.
  * 
- * Sharding strategy:
- * - Passchain Shards: Geographic/functional regions (West Africa, Central Africa, Retail)
+ * African Sovereignty Architecture:
+ * - 20 Geographic Shards across 5 regions (North, West, East, Central, Southern Africa)
+ * - 5 Regional Data Availability Committees (7 nodes each = 35 total)
  * - Local consensus: ~5,000 TPS per shard
- * - Cross-Shard Bridge: Relay chain handles message passing
+ * - Cross-Shard Bridge: Relay chain with multi-region validation
  * - Total capacity: 20 shards × 5,000 TPS = 100,000 TPS continent-wide
+ * - Geographic distribution limit: Max 33% control from any single region
+ * - ASU (African Stable Unit) settlement layer for inter-country transactions
+ * 
+ * CRITICAL: No single region can control more than 33% of validators
  */
 public class CrossShardTransaction extends BaseTransaction {
+    
+    // African Geographic Regions
+    public enum AfricanRegion {
+        NORTH_AFRICA,    // Morocco, Egypt, Algeria, Tunisia, Libya
+        WEST_AFRICA,     // Nigeria, Ghana, Senegal, Ivory Coast, Mali
+        EAST_AFRICA,     // Kenya, Ethiopia, Tanzania, Uganda, Rwanda
+        CENTRAL_AFRICA,  // DRC, Cameroon, Gabon, Chad, CAR
+        SOUTHERN_AFRICA  // South Africa, Zimbabwe, Botswana, Namibia, Angola
+    }
+    
+    // Regional Data Availability Committee structure
+    public static class RegionalDAC {
+        private final AfricanRegion region;
+        private final List<Integer> nodeIds; // 7 nodes per region
+        private final Map<Integer, Double> nodeReputations;
+        
+        public RegionalDAC(AfricanRegion region, List<Integer> nodeIds) {
+            this.region = region;
+            this.nodeIds = new ArrayList<>(nodeIds);
+            this.nodeReputations = new ConcurrentHashMap<>();
+            // Initialize reputation scores
+            for (Integer nodeId : nodeIds) {
+                nodeReputations.put(nodeId, 1.0); // Perfect score initially
+            }
+        }
+        
+        public AfricanRegion getRegion() { return region; }
+        public List<Integer> getNodeIds() { return new ArrayList<>(nodeIds); }
+        public double getNodeReputation(int nodeId) { 
+            return nodeReputations.getOrDefault(nodeId, 0.0); 
+        }
+        
+        public void updateReputation(int nodeId, double newReputation) {
+            nodeReputations.put(nodeId, Math.max(0.0, Math.min(1.0, newReputation)));
+        }
+    }
     
     private final Address senderAddress;
     private final Address recipientAddress;
@@ -26,35 +69,54 @@ public class CrossShardTransaction extends BaseTransaction {
     private final Amount amount;
     private final byte[] crossShardProof; // Merkle proof for cross-shard verification
     private final List<byte[]> relaySignatures; // Relay chain validator signatures
+    private final Map<AfricanRegion, Integer> regionValidatorCount; // Geographic distribution tracking
     private final String messageHash; // Hash of cross-shard message
     private final long sourceBlockHeight; // Source shard block height
     private final long nonce; // Prevents replay attacks
     private final boolean requiresAtomicExecution; // For atomic cross-shard swaps
+    private final boolean settleViaASU; // Use ASU settlement layer
+    private final List<Integer> dacNodeConfirmations; // DAC node confirmations (need 5+ from different regions)
+    private final byte[] submarineCableRoute; // Preferred African submarine cable routing
+    
+    // 5 Regional Data Availability Committees (7 nodes each)
+    private static final Map<AfricanRegion, RegionalDAC> REGIONAL_DACS = initializeRegionalDACs();
+    
+    // Geographic distribution limit: Max 33% from any region
+    private static final double MAX_REGION_CONTROL = 0.33;
+    
+    // Shard to region mapping (20 shards across 5 regions)
+    private static final Map<Integer, AfricanRegion> SHARD_REGIONS = initializeShardRegions();
     
     /**
-     * Creates a new CrossShardTransaction
+     * Creates a new CrossShardTransaction with African sovereignty enforcement
      * 
      * @param senderAddress Sender's address
      * @param recipientAddress Recipient's address
-     * @param sourceShard Source shard ID
-     * @param destinationShard Destination shard ID
+     * @param sourceShard Source shard ID (0-19)
+     * @param destinationShard Destination shard ID (0-19)
      * @param amount Amount to transfer
      * @param crossShardProof Merkle proof for verification
-     * @param relaySignatures Relay chain validator signatures
+     * @param relaySignatures Relay chain validator signatures (multi-region required)
      * @param sourceBlockHeight Block height in source shard
      * @param nonce Transaction nonce
      * @param requiresAtomicExecution Whether this needs atomic execution
+     * @param settleViaASU Use ASU settlement layer for inter-country transactions
+     * @param dacNodeConfirmations DAC node confirmations from multiple regions
+     * @param submarineCableRoute Preferred African submarine cable routing
      */
     public CrossShardTransaction(
             Address senderAddress, Address recipientAddress,
             int sourceShard, int destinationShard,
             Amount amount, byte[] crossShardProof,
             List<byte[]> relaySignatures, long sourceBlockHeight,
-            long nonce, boolean requiresAtomicExecution) {
+            long nonce, boolean requiresAtomicExecution,
+            boolean settleViaASU, List<Integer> dacNodeConfirmations,
+            byte[] submarineCableRoute) {
         
         super(buildTransactionData(senderAddress, recipientAddress, sourceShard,
                 destinationShard, amount, crossShardProof, relaySignatures,
-                sourceBlockHeight, nonce, requiresAtomicExecution),
+                sourceBlockHeight, nonce, requiresAtomicExecution, settleViaASU,
+                dacNodeConfirmations, submarineCableRoute),
                 TransactionType.CROSS_SHARD);
         
         this.senderAddress = senderAddress;
@@ -67,10 +129,92 @@ public class CrossShardTransaction extends BaseTransaction {
         for (byte[] sig : relaySignatures) {
             this.relaySignatures.add(Arrays.copyOf(sig, sig.length));
         }
+        this.regionValidatorCount = new ConcurrentHashMap<>();
         this.messageHash = generateMessageHash();
         this.sourceBlockHeight = sourceBlockHeight;
         this.nonce = nonce;
         this.requiresAtomicExecution = requiresAtomicExecution;
+        this.settleViaASU = settleViaASU;
+        this.dacNodeConfirmations = new ArrayList<>(dacNodeConfirmations);
+        this.submarineCableRoute = Arrays.copyOf(submarineCableRoute, submarineCableRoute.length);
+        
+        // Track validator geographic distribution
+        trackValidatorDistribution();
+    }
+    
+    /**
+     * Initializes the 5 Regional Data Availability Committees
+     * 35 nodes total (7 per region)
+     */
+    private static Map<AfricanRegion, RegionalDAC> initializeRegionalDACs() {
+        Map<AfricanRegion, RegionalDAC> dacs = new EnumMap<>(AfricanRegion.class);
+        
+        // North Africa DAC: 7 nodes
+        dacs.put(AfricanRegion.NORTH_AFRICA, new RegionalDAC(
+            AfricanRegion.NORTH_AFRICA,
+            Arrays.asList(0, 1, 2, 3, 4, 5, 6) // Morocco, Egypt, Algeria, Tunisia, Libya, Sudan, Mauritania
+        ));
+        
+        // West Africa DAC: 7 nodes
+        dacs.put(AfricanRegion.WEST_AFRICA, new RegionalDAC(
+            AfricanRegion.WEST_AFRICA,
+            Arrays.asList(7, 8, 9, 10, 11, 12, 13) // Nigeria, Ghana, Senegal, Ivory Coast, Mali, Burkina Faso, Guinea
+        ));
+        
+        // East Africa DAC: 7 nodes
+        dacs.put(AfricanRegion.EAST_AFRICA, new RegionalDAC(
+            AfricanRegion.EAST_AFRICA,
+            Arrays.asList(14, 15, 16, 17, 18, 19, 20) // Kenya, Ethiopia, Tanzania, Uganda, Rwanda, Burundi, Djibouti
+        ));
+        
+        // Central Africa DAC: 7 nodes
+        dacs.put(AfricanRegion.CENTRAL_AFRICA, new RegionalDAC(
+            AfricanRegion.CENTRAL_AFRICA,
+            Arrays.asList(21, 22, 23, 24, 25, 26, 27) // DRC, Cameroon, Gabon, Chad, CAR, Congo, Equatorial Guinea
+        ));
+        
+        // Southern Africa DAC: 7 nodes
+        dacs.put(AfricanRegion.SOUTHERN_AFRICA, new RegionalDAC(
+            AfricanRegion.SOUTHERN_AFRICA,
+            Arrays.asList(28, 29, 30, 31, 32, 33, 34) // South Africa, Zimbabwe, Botswana, Namibia, Angola, Zambia, Mozambique
+        ));
+        
+        return Collections.unmodifiableMap(dacs);
+    }
+    
+    /**
+     * Initializes shard to region mapping
+     * 20 geographic shards distributed across 5 regions (4 shards per region)
+     */
+    private static Map<Integer, AfricanRegion> initializeShardRegions() {
+        Map<Integer, AfricanRegion> mapping = new HashMap<>();
+        
+        // North Africa: Shards 0-3
+        for (int i = 0; i < 4; i++) {
+            mapping.put(i, AfricanRegion.NORTH_AFRICA);
+        }
+        
+        // West Africa: Shards 4-7
+        for (int i = 4; i < 8; i++) {
+            mapping.put(i, AfricanRegion.WEST_AFRICA);
+        }
+        
+        // East Africa: Shards 8-11
+        for (int i = 8; i < 12; i++) {
+            mapping.put(i, AfricanRegion.EAST_AFRICA);
+        }
+        
+        // Central Africa: Shards 12-15
+        for (int i = 12; i < 16; i++) {
+            mapping.put(i, AfricanRegion.CENTRAL_AFRICA);
+        }
+        
+        // Southern Africa: Shards 16-19
+        for (int i = 16; i < 20; i++) {
+            mapping.put(i, AfricanRegion.SOUTHERN_AFRICA);
+        }
+        
+        return Collections.unmodifiableMap(mapping);
     }
     
     /**
@@ -81,9 +225,11 @@ public class CrossShardTransaction extends BaseTransaction {
             int sourceShard, int destinationShard,
             Amount amount, byte[] crossShardProof,
             List<byte[]> relaySignatures, long sourceBlockHeight,
-            long nonce, boolean requiresAtomicExecution) {
+            long nonce, boolean requiresAtomicExecution,
+            boolean settleViaASU, List<Integer> dacNodeConfirmations,
+            byte[] submarineCableRoute) {
         
-        ByteBuffer buffer = ByteBuffer.allocate(8192);
+        ByteBuffer buffer = ByteBuffer.allocate(16384); // Increased for sovereignty data
         
         // Write addresses
         buffer.put(senderAddress.toSlice());
@@ -115,13 +261,63 @@ public class CrossShardTransaction extends BaseTransaction {
         // Write nonce
         buffer.putLong(nonce);
         
-        // Write atomic execution flag
-        buffer.put((byte) (requiresAtomicExecution ? 1 : 0));
+        // Write flags
+        byte flags = 0;
+        if (requiresAtomicExecution) flags |= 0x01;
+        if (settleViaASU) flags |= 0x02;
+        buffer.put(flags);
+        
+        // Write DAC node confirmations
+        buffer.putInt(dacNodeConfirmations.size());
+        for (Integer nodeId : dacNodeConfirmations) {
+            buffer.putInt(nodeId);
+        }
+        
+        // Write submarine cable route
+        buffer.putInt(submarineCableRoute.length);
+        buffer.put(submarineCableRoute);
         
         buffer.flip();
         byte[] result = new byte[buffer.limit()];
         buffer.get(result);
         return result;
+    }
+    
+    /**
+     * Tracks validator geographic distribution to enforce 33% limit
+     */
+    private void trackValidatorDistribution() {
+        regionValidatorCount.clear();
+        
+        for (byte[] signature : relaySignatures) {
+            try {
+                ByteBuffer buffer = ByteBuffer.wrap(signature);
+                int validatorId = buffer.getInt();
+                
+                // Determine validator's region
+                AfricanRegion region = getValidatorRegion(validatorId);
+                regionValidatorCount.merge(region, 1, Integer::sum);
+                
+            } catch (Exception e) {
+                // Skip invalid signatures
+            }
+        }
+    }
+    
+    /**
+     * Gets the region for a validator based on their ID
+     */
+    private AfricanRegion getValidatorRegion(int validatorId) {
+        // Validators 0-6: North Africa
+        if (validatorId >= 0 && validatorId <= 6) return AfricanRegion.NORTH_AFRICA;
+        // Validators 7-13: West Africa
+        if (validatorId >= 7 && validatorId <= 13) return AfricanRegion.WEST_AFRICA;
+        // Validators 14-20: East Africa
+        if (validatorId >= 14 && validatorId <= 20) return AfricanRegion.EAST_AFRICA;
+        // Validators 21-27: Central Africa
+        if (validatorId >= 21 && validatorId <= 27) return AfricanRegion.CENTRAL_AFRICA;
+        // Validators 28-34: Southern Africa
+        return AfricanRegion.SOUTHERN_AFRICA;
     }
     
     @Override
@@ -175,19 +371,35 @@ public class CrossShardTransaction extends BaseTransaction {
         return requiresAtomicExecution;
     }
     
+    public boolean settlesViaASU() {
+        return settleViaASU;
+    }
+    
+    public List<Integer> getDACNodeConfirmations() {
+        return new ArrayList<>(dacNodeConfirmations);
+    }
+    
+    public byte[] getSubmarineCableRoute() {
+        return Arrays.copyOf(submarineCableRoute, submarineCableRoute.length);
+    }
+    
+    public Map<AfricanRegion, Integer> getRegionValidatorCount() {
+        return new HashMap<>(regionValidatorCount);
+    }
+    
     @Override
     public boolean isCrossBorder() {
-        // Cross-shard can be cross-border if shards are regional
-        return isGeographicShard(sourceShard) && isGeographicShard(destinationShard);
+        // Cross-shard is cross-border if shards are in different regions
+        AfricanRegion sourceRegion = SHARD_REGIONS.get(sourceShard);
+        AfricanRegion destRegion = SHARD_REGIONS.get(destinationShard);
+        return sourceRegion != null && destRegion != null && !sourceRegion.equals(destRegion);
     }
     
     /**
-     * Checks if a shard is a geographic shard (vs functional shard)
+     * Gets the geographic region for a shard
      */
-    private boolean isGeographicShard(int shardId) {
-        // Geographic shards: 0-19 (regional sharding)
-        // Functional shards: 20+ (banking, retail, etc.)
-        return shardId < 20;
+    public AfricanRegion getShardRegion(int shardId) {
+        return SHARD_REGIONS.getOrDefault(shardId, AfricanRegion.WEST_AFRICA);
     }
     
     /**
@@ -195,9 +407,9 @@ public class CrossShardTransaction extends BaseTransaction {
      */
     private String generateMessageHash() {
         try {
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
             
-            ByteBuffer buffer = ByteBuffer.allocate(256);
+            ByteBuffer buffer = ByteBuffer.allocate(512);
             buffer.put(senderAddress.toSlice());
             buffer.put(recipientAddress.toSlice());
             buffer.putInt(sourceShard);
@@ -205,6 +417,7 @@ public class CrossShardTransaction extends BaseTransaction {
             buffer.put(amount.toBytes());
             buffer.putLong(sourceBlockHeight);
             buffer.putLong(nonce);
+            buffer.put((byte) (settleViaASU ? 1 : 0));
             
             buffer.flip();
             byte[] data = new byte[buffer.limit()];
@@ -227,9 +440,9 @@ public class CrossShardTransaction extends BaseTransaction {
     
     @Override
     protected boolean validateTransactionRules() {
-        // Validate shard IDs
-        if (sourceShard < 0 || sourceShard >= 50 || // Max 50 shards
-            destinationShard < 0 || destinationShard >= 50) {
+        // Validate shard IDs (0-19 for geographic shards)
+        if (sourceShard < 0 || sourceShard >= 20 || 
+            destinationShard < 0 || destinationShard >= 20) {
             return false;
         }
         
@@ -243,9 +456,19 @@ public class CrossShardTransaction extends BaseTransaction {
             return false;
         }
         
-        // Validate relay signatures (minimum 2/3 required)
+        // Validate relay signatures (supermajority required)
         int requiredSignatures = getRequiredRelaySignatures();
         if (relaySignatures == null || relaySignatures.size() < requiredSignatures) {
+            return false;
+        }
+        
+        // CRITICAL: Enforce geographic distribution limit (max 33% from any region)
+        if (!enforceGeographicDistribution()) {
+            return false;
+        }
+        
+        // Validate DAC node confirmations (need 5+ from different regions)
+        if (!validateDACConfirmations()) {
             return false;
         }
         
@@ -259,19 +482,73 @@ public class CrossShardTransaction extends BaseTransaction {
             return false;
         }
         
-        // Verify relay signatures
+        // Verify relay signatures with multi-region requirement
         return verifyRelaySignatures();
     }
     
     /**
-     * Gets the required number of relay signatures based on shard configuration
+     * CRITICAL: Enforces geographic distribution limit (max 33% from any region)
+     * Prevents any single region from controlling the network
+     */
+    private boolean enforceGeographicDistribution() {
+        int totalValidators = relaySignatures.size();
+        if (totalValidators == 0) return false;
+        
+        for (Map.Entry<AfricanRegion, Integer> entry : regionValidatorCount.entrySet()) {
+            double regionPercentage = (double) entry.getValue() / totalValidators;
+            
+            // No region can control more than 33%
+            if (regionPercentage > MAX_REGION_CONTROL) {
+                return false;
+            }
+        }
+        
+        // Require at least 3 different regions represented
+        return regionValidatorCount.size() >= 3;
+    }
+    
+    /**
+     * Validates DAC node confirmations (need 5+ from different regions)
+     */
+    private boolean validateDACConfirmations() {
+        if (dacNodeConfirmations.size() < 5) {
+            return false;
+        }
+        
+        Set<AfricanRegion> regionsRepresented = new HashSet<>();
+        
+        for (Integer nodeId : dacNodeConfirmations) {
+            AfricanRegion region = getValidatorRegion(nodeId);
+            regionsRepresented.add(region);
+            
+            // Verify node is part of a Regional DAC
+            RegionalDAC dac = REGIONAL_DACS.get(region);
+            if (dac == null || !dac.getNodeIds().contains(nodeId)) {
+                return false;
+            }
+            
+            // Verify node has good reputation (>0.5)
+            if (dac.getNodeReputation(nodeId) < 0.5) {
+                return false;
+            }
+        }
+        
+        // Require at least 3 different regions
+        return regionsRepresented.size() >= 3;
+    }
+    
+    /**
+     * Gets the required number of relay signatures based on transaction type
+     * Uses supermajority for critical operations
      */
     private int getRequiredRelaySignatures() {
-        // For critical cross-shard transactions, require more signatures
-        if (requiresAtomicExecution || amount.getValue().compareTo(BigInteger.valueOf(1000000)) > 0) {
-            return 5; // High-value or atomic: 5 signatures
+        // For critical cross-shard transactions, require supermajority (2/3)
+        if (requiresAtomicExecution || 
+            amount.getValue().compareTo(BigInteger.valueOf(1000000)) > 0 ||
+            settleViaASU) {
+            return 7; // Supermajority: 7 out of 10 validators
         } else {
-            return 3; // Standard: 3 signatures
+            return 5; // Standard majority: 5 out of 10 validators
         }
     }
     
@@ -326,7 +603,7 @@ public class CrossShardTransaction extends BaseTransaction {
      */
     private byte[] computeMerkleRoot(byte[] leaf, List<byte[]> path, int index) {
         try {
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
             
             byte[] current = digest.digest(leaf);
             
@@ -355,18 +632,33 @@ public class CrossShardTransaction extends BaseTransaction {
     }
     
     /**
-     * Verifies relay chain validator signatures
+     * Verifies relay chain validator signatures with multi-region requirement
      */
     private boolean verifyRelaySignatures() {
         int validSignatures = 0;
+        Set<AfricanRegion> regionsRepresented = new HashSet<>();
         
         for (byte[] signature : relaySignatures) {
             if (verifyRelaySignature(signature)) {
                 validSignatures++;
+                
+                // Track region representation
+                try {
+                    ByteBuffer buffer = ByteBuffer.wrap(signature);
+                    int validatorId = buffer.getInt();
+                    AfricanRegion region = getValidatorRegion(validatorId);
+                    regionsRepresented.add(region);
+                } catch (Exception e) {
+                    // Skip
+                }
             }
         }
         
-        return validSignatures >= getRequiredRelaySignatures();
+        // Require supermajority AND multi-region representation
+        boolean hasSupermajority = validSignatures >= getRequiredRelaySignatures();
+        boolean hasMultiRegion = regionsRepresented.size() >= 3; // At least 3 regions
+        
+        return hasSupermajority && hasMultiRegion;
     }
     
     /**
@@ -378,6 +670,11 @@ public class CrossShardTransaction extends BaseTransaction {
             
             // Read validator ID
             int validatorId = buffer.getInt();
+            
+            // Validate validator ID is within DAC range (0-34)
+            if (validatorId < 0 || validatorId >= 35) {
+                return false;
+            }
             
             // Read signature data
             int sigLength = buffer.getInt();
@@ -393,7 +690,14 @@ public class CrossShardTransaction extends BaseTransaction {
                 return false;
             }
             
-            // In production: verify signature against validator's public key
+            // Verify validator has good reputation
+            AfricanRegion region = getValidatorRegion(validatorId);
+            RegionalDAC dac = REGIONAL_DACS.get(region);
+            if (dac != null && dac.getNodeReputation(validatorId) < 0.5) {
+                return false; // Low reputation validator
+            }
+            
+            // In production: verify signature against validator's public key using ECDSA
             // For now, basic validation
             return sigData.length >= 64 && validatorId >= 0;
             
@@ -403,72 +707,146 @@ public class CrossShardTransaction extends BaseTransaction {
     }
     
     /**
-     * Estimates the time for cross-shard finalization
+     * Estimates the time for cross-shard finalization using African infrastructure
      */
     public long estimateFinalityTime() {
         // Base finality time: 3 seconds (block time)
         long baseTime = 3000;
         
-        // Add relay chain confirmation time
-        long relayTime = 2000; // 2 seconds
+        // Add relay chain confirmation time (multi-region consensus)
+        long relayTime = 2500; // 2.5 seconds for multi-region
         
         // Add destination shard inclusion time
         long destTime = 3000; // 3 seconds
         
-        // Add network latency based on geographic distance
-        long latency = estimateNetworkLatency(sourceShard, destinationShard);
+        // Add network latency based on African submarine cable routing
+        long latency = estimateAfricanNetworkLatency(sourceShard, destinationShard);
         
-        return baseTime + relayTime + destTime + latency;
+        // Add DAC verification time
+        long dacTime = 1000; // 1 second for DAC confirmations
+        
+        return baseTime + relayTime + destTime + latency + dacTime;
     }
     
     /**
-     * Estimates network latency between shards
+     * Estimates network latency using African submarine cable infrastructure
+     * Prioritizes African submarine cables over routing through Europe
      */
-    private long estimateNetworkLatency(int shard1, int shard2) {
-        // If both shards are in same region, low latency
-        if (getShardRegion(shard1).equals(getShardRegion(shard2))) {
-            return 100; // 100ms
-        } else {
-            return 500; // 500ms cross-region
+    private long estimateAfricanNetworkLatency(int shard1, int shard2) {
+        AfricanRegion region1 = getShardRegion(shard1);
+        AfricanRegion region2 = getShardRegion(shard2);
+        
+        // Same region: low latency
+        if (region1.equals(region2)) {
+            return 100; // 100ms intra-region
         }
+        
+        // Use African submarine cable routing
+        // EASSy cable (East Africa), MainOne/WACS (West Africa), SAFE (Southern Africa)
+        
+        // Adjacent regions: moderate latency
+        if (areAdjacentRegions(region1, region2)) {
+            return 300; // 300ms adjacent regions via submarine cables
+        }
+        
+        // Cross-continent: higher latency but still via African routes
+        return 600; // 600ms cross-continent via African submarine cables
     }
     
     /**
-     * Gets the geographic region for a shard
+     * Checks if two regions are geographically adjacent
      */
-    private String getShardRegion(int shardId) {
-        if (shardId < 5) return "WEST_AFRICA";
-        if (shardId < 10) return "EAST_AFRICA";
-        if (shardId < 15) return "CENTRAL_AFRICA";
-        if (shardId < 20) return "SOUTHERN_AFRICA";
-        return "FUNCTIONAL"; // Non-geographic shard
+    private boolean areAdjacentRegions(AfricanRegion region1, AfricanRegion region2) {
+        // North adjacent to: West, East
+        if (region1 == AfricanRegion.NORTH_AFRICA) {
+            return region2 == AfricanRegion.WEST_AFRICA || region2 == AfricanRegion.EAST_AFRICA;
+        }
+        
+        // West adjacent to: North, Central
+        if (region1 == AfricanRegion.WEST_AFRICA) {
+            return region2 == AfricanRegion.NORTH_AFRICA || region2 == AfricanRegion.CENTRAL_AFRICA;
+        }
+        
+        // East adjacent to: North, Central, Southern
+        if (region1 == AfricanRegion.EAST_AFRICA) {
+            return region2 == AfricanRegion.NORTH_AFRICA || 
+                   region2 == AfricanRegion.CENTRAL_AFRICA ||
+                   region2 == AfricanRegion.SOUTHERN_AFRICA;
+        }
+        
+        // Central adjacent to: West, East, Southern
+        if (region1 == AfricanRegion.CENTRAL_AFRICA) {
+            return region2 == AfricanRegion.WEST_AFRICA || 
+                   region2 == AfricanRegion.EAST_AFRICA ||
+                   region2 == AfricanRegion.SOUTHERN_AFRICA;
+        }
+        
+        // Southern adjacent to: East, Central
+        if (region1 == AfricanRegion.SOUTHERN_AFRICA) {
+            return region2 == AfricanRegion.EAST_AFRICA || region2 == AfricanRegion.CENTRAL_AFRICA;
+        }
+        
+        return false;
     }
     
     @Override
     public Amount getRequiredFee() {
-        // Cross-shard fees are slightly higher due to relay costs
-        BigInteger baseFee = amount.getValue().divide(BigInteger.valueOf(500)); // 0.2%
+        // Base fee for cross-shard transfer
+        BigInteger baseFee = amount.getValue().divide(BigInteger.valueOf(1000)); // 0.1%
         
-        // Add relay fee
-        BigInteger relayFee = BigInteger.valueOf(100);
+        // Add relay fee (subsidized by Treasury DAO for African transfers)
+        BigInteger relayFee = BigInteger.valueOf(50); // Reduced from 100
         
-        return new Amount(baseFee.add(relayFee), amount.getCurrency(), amount.getDecimals());
+        // If settling via ASU, slight premium
+        if (settleViaASU) {
+            relayFee = relayFee.add(BigInteger.valueOf(25));
+        }
+        
+        // African exchange priority: reduce fees by 30%
+        BigInteger totalFee = baseFee.add(relayFee);
+        totalFee = totalFee.multiply(BigInteger.valueOf(70)).divide(BigInteger.valueOf(100));
+        
+        return new Amount(totalFee, amount.getCurrency(), amount.getDecimals());
+    }
+    
+    /**
+     * Checks if this transaction enforces African sovereignty principles
+     */
+    public boolean enforcesAfricanSovereignty() {
+        // Check geographic distribution
+        if (!enforceGeographicDistribution()) return false;
+        
+        // Check DAC confirmations
+        if (!validateDACConfirmations()) return false;
+        
+        // Check multi-region representation
+        Set<AfricanRegion> regions = new HashSet<>();
+        for (Integer nodeId : dacNodeConfirmations) {
+            regions.add(getValidatorRegion(nodeId));
+        }
+        
+        return regions.size() >= 3;
     }
     
     @Override
     public String getDescription() {
-        return String.format("Cross-Shard: %s from Shard-%d to Shard-%d (%s → %s)",
+        String settlementInfo = settleViaASU ? " via ASU" : "";
+        return String.format("Cross-Shard%s: %s from Shard-%d to Shard-%d (%s → %s) [%d DAC confirmations from %d regions]",
+            settlementInfo,
             amount.toFormattedString(),
             sourceShard,
             destinationShard,
             getShardRegion(sourceShard),
-            getShardRegion(destinationShard)
+            getShardRegion(destinationShard),
+            dacNodeConfirmations.size(),
+            regionValidatorCount.size()
         );
     }
     
     @Override
     public String toString() {
-        return String.format("CrossShardTransaction{source=%d, dest=%d, amount=%s, atomic=%b, nonce=%d}",
-            sourceShard, destinationShard, amount, requiresAtomicExecution, nonce);
+        return String.format("CrossShardTransaction{source=%d, dest=%d, amount=%s, ASU=%b, atomic=%b, regions=%d, nonce=%d}",
+            sourceShard, destinationShard, amount, settleViaASU, requiresAtomicExecution, 
+            regionValidatorCount.size(), nonce);
     }
 }

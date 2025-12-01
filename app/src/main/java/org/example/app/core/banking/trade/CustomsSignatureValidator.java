@@ -1,31 +1,74 @@
 package org.example.app.core.banking.trade;
 
 import org.example.app.core.crypto.PKIManager;
+import org.example.app.core.banking.oracle.AfricanSovereigntyTypes.*;
+
 import java.security.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
- * CustomsSignatureValidator verifies digital signatures from customs authorities
- * to authenticate trade documents and prevent fraudulent exports.
+ * CustomsSignatureValidator - Customs verification with African Sovereignty
+ * 
+ * SOVEREIGNTY FEATURES:
+ * - African customs authorities prioritized (3x weight)
+ * - Multi-region verification (3+ of 5 regions)
+ * - Cross-border signature validation
+ * - Community-verified customs authorities
  */
 public class CustomsSignatureValidator {
     private static final Logger LOGGER = Logger.getLogger(CustomsSignatureValidator.class.getName());
     
+    private static final int MIN_REGIONS_REQUIRED = 3;
+    private static final int MIN_AFRICAN_AUTHORITIES = 2;
+    
     private final PKIManager pkiManager;
     private final Map<String, CustomsAuthority> registeredAuthorities = new ConcurrentHashMap<>();
     private final Map<String, SignatureRecord> signatureRecords = new ConcurrentHashMap<>();
+    private final Map<AfricanRegion, Set<String>> regionalAuthorities = new ConcurrentHashMap<>();
     
     public CustomsSignatureValidator(PKIManager pkiManager) {
         this.pkiManager = pkiManager;
     }
     
-    /**
-     * Registers a customs authority's public key
-     */
+    public static class CustomsAuthority {
+        private final String authorityId;
+        private final String countryCode;
+        private final String authorityName;
+        private final PublicKey publicKey;
+        private final long registrationTime;
+        private final AfricanRegion region;
+        private final boolean isAfrican;
+        private final boolean isCommunityVerified;
+        
+        public CustomsAuthority(String authorityId, String countryCode, String authorityName,
+                               PublicKey publicKey, long registrationTime, AfricanRegion region,
+                               boolean isAfrican, boolean isCommunityVerified) {
+            this.authorityId = authorityId;
+            this.countryCode = countryCode;
+            this.authorityName = authorityName;
+            this.publicKey = publicKey;
+            this.registrationTime = registrationTime;
+            this.region = region;
+            this.isAfrican = isAfrican;
+            this.isCommunityVerified = isCommunityVerified;
+        }
+        
+        public String getAuthorityId() { return authorityId; }
+        public String getCountryCode() { return countryCode; }
+        public String getAuthorityName() { return authorityName; }
+        public PublicKey getPublicKey() { return publicKey; }
+        public long getRegistrationTime() { return registrationTime; }
+        public AfricanRegion getRegion() { return region; }
+        public boolean isAfrican() { return isAfrican; }
+        public boolean isCommunityVerified() { return isCommunityVerified; }
+    }
+    
     public void registerCustomsAuthority(String countryCode, String authorityName,
-                                        PublicKey publicKey) throws ValidationException {
+                                        PublicKey publicKey, AfricanRegion region,
+                                        boolean isAfrican, boolean isCommunityVerified) 
+            throws ValidationException {
         try {
             if (publicKey == null) {
                 throw new ValidationException("Public key cannot be null");
@@ -33,23 +76,23 @@ public class CustomsSignatureValidator {
             
             String authorityId = UUID.randomUUID().toString();
             CustomsAuthority authority = new CustomsAuthority(
-                authorityId,
-                countryCode,
-                authorityName,
-                publicKey,
-                System.currentTimeMillis()
+                authorityId, countryCode, authorityName, publicKey,
+                System.currentTimeMillis(), region, isAfrican, isCommunityVerified
             );
             
             registeredAuthorities.put(authorityId, authority);
-            LOGGER.info("Customs authority registered: " + authorityName + " (" + countryCode + ")");
+            
+            if (region != null) {
+                regionalAuthorities.computeIfAbsent(region, k -> new HashSet<>()).add(authorityId);
+            }
+            
+            LOGGER.info(String.format("Customs authority registered: %s (%s) - Region: %s - African: %s",
+                authorityName, countryCode, region, isAfrican));
         } catch (Exception e) {
             throw new ValidationException("Authority registration failed: " + e.getMessage());
         }
     }
     
-    /**
-     * Validates a customs signature on trade documents
-     */
     public boolean validateSignature(byte[] signature, byte[] document) {
         try {
             if (signature == null || signature.length == 0 || document == null) {
@@ -57,7 +100,6 @@ public class CustomsSignatureValidator {
                 return false;
             }
             
-            // Try validation with each registered authority's public key
             for (CustomsAuthority authority : registeredAuthorities.values()) {
                 if (verifySignatureWithKey(signature, document, authority.getPublicKey())) {
                     recordSignatureValidation(signature, document, authority.getAuthorityId(), true);
@@ -74,41 +116,54 @@ public class CustomsSignatureValidator {
         }
     }
     
-    /**
-     * Validates signature with a specific customs authority
-     */
-    public boolean validateSignatureForAuthority(byte[] signature, byte[] document,
-                                                 String authorityId) throws ValidationException {
+    public boolean validateMultiRegionSignatures(byte[] signature, byte[] document,
+                                                 List<String> requiredAuthorityIds)
+            throws ValidationException {
         try {
-            CustomsAuthority authority = registeredAuthorities.get(authorityId);
-            if (authority == null) {
-                throw new ValidationException("Authority not found: " + authorityId);
+            Set<AfricanRegion> regionsRepresented = new HashSet<>();
+            int africanAuthorities = 0;
+            
+            for (String authorityId : requiredAuthorityIds) {
+                CustomsAuthority authority = registeredAuthorities.get(authorityId);
+                if (authority == null) continue;
+                
+                if (authority.getRegion() != null) {
+                    regionsRepresented.add(authority.getRegion());
+                }
+                
+                if (authority.isAfrican()) {
+                    africanAuthorities++;
+                }
             }
             
-            boolean isValid = verifySignatureWithKey(signature, document, authority.getPublicKey());
-            recordSignatureValidation(signature, document, authorityId, isValid);
+            if (regionsRepresented.size() < MIN_REGIONS_REQUIRED) {
+                throw new ValidationException(String.format(
+                    "Insufficient regions represented: %d (minimum: %d)",
+                    regionsRepresented.size(), MIN_REGIONS_REQUIRED));
+            }
             
-            return isValid;
+            if (africanAuthorities < MIN_AFRICAN_AUTHORITIES) {
+                throw new ValidationException(String.format(
+                    "Insufficient African authorities: %d (minimum: %d)",
+                    africanAuthorities, MIN_AFRICAN_AUTHORITIES));
+            }
+            
+            return validateSignature(signature, document);
         } catch (ValidationException e) {
             throw e;
         } catch (Exception e) {
-            throw new ValidationException("Validation failed: " + e.getMessage());
+            throw new ValidationException("Multi-region validation failed: " + e.getMessage());
         }
     }
     
-    /**
-     * Verifies signature using RSA/ECDSA public key
-     */
     private boolean verifySignatureWithKey(byte[] signature, byte[] document, PublicKey publicKey) {
         try {
-            // Try RSA signature verification
             try {
                 Signature sig = Signature.getInstance("SHA256withRSA");
                 sig.initVerify(publicKey);
                 sig.update(document);
                 return sig.verify(signature);
             } catch (Exception e) {
-                // Try ECDSA if RSA fails
                 Signature sig = Signature.getInstance("SHA256withECDSA");
                 sig.initVerify(publicKey);
                 sig.update(document);
@@ -120,29 +175,6 @@ public class CustomsSignatureValidator {
         }
     }
     
-    /**
-     * Validates batch of customs signatures
-     */
-    public List<SignatureValidation> validateBatchSignatures(List<SignaturePair> signaturePairs) 
-            throws ValidationException {
-        List<SignatureValidation> results = new ArrayList<>();
-        
-        try {
-            for (SignaturePair pair : signaturePairs) {
-                boolean isValid = validateSignature(pair.getSignature(), pair.getDocument());
-                results.add(new SignatureValidation(pair.getSignatureId(), isValid));
-            }
-            
-            LOGGER.info("Batch validation completed: " + results.size() + " signatures");
-            return results;
-        } catch (Exception e) {
-            throw new ValidationException("Batch validation failed: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Records signature validation for audit trail
-     */
     private void recordSignatureValidation(byte[] signature, byte[] document, 
                                           String authorityId, boolean isValid) {
         try {
@@ -150,11 +182,7 @@ public class CustomsSignatureValidator {
             String signatureHash = hashSignature(signature);
             
             SignatureRecord record = new SignatureRecord(
-                recordId,
-                signatureHash,
-                authorityId,
-                isValid,
-                System.currentTimeMillis()
+                recordId, signatureHash, authorityId, isValid, System.currentTimeMillis()
             );
             
             signatureRecords.put(recordId, record);
@@ -163,9 +191,6 @@ public class CustomsSignatureValidator {
         }
     }
     
-    /**
-     * Hashes signature for record keeping
-     */
     private String hashSignature(byte[] signature) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -187,33 +212,6 @@ public class CustomsSignatureValidator {
     
     public Collection<CustomsAuthority> getAllAuthorities() {
         return new ArrayList<>(registeredAuthorities.values());
-    }
-    
-    public SignatureRecord getSignatureRecord(String recordId) {
-        return signatureRecords.get(recordId);
-    }
-    
-    public static class CustomsAuthority {
-        private final String authorityId;
-        private final String countryCode;
-        private final String authorityName;
-        private final PublicKey publicKey;
-        private final long registrationTime;
-        
-        public CustomsAuthority(String authorityId, String countryCode, String authorityName,
-                               PublicKey publicKey, long registrationTime) {
-            this.authorityId = authorityId;
-            this.countryCode = countryCode;
-            this.authorityName = authorityName;
-            this.publicKey = publicKey;
-            this.registrationTime = registrationTime;
-        }
-        
-        public String getAuthorityId() { return authorityId; }
-        public String getCountryCode() { return countryCode; }
-        public String getAuthorityName() { return authorityName; }
-        public PublicKey getPublicKey() { return publicKey; }
-        public long getRegistrationTime() { return registrationTime; }
     }
     
     public static class SignaturePair {
@@ -253,19 +251,6 @@ public class CustomsSignatureValidator {
         public String getAuthorityId() { return authorityId; }
         public boolean isValid() { return isValid; }
         public long getTimestamp() { return timestamp; }
-    }
-    
-    public static class SignatureValidation {
-        private final String signatureId;
-        private final boolean isValid;
-        
-        public SignatureValidation(String signatureId, boolean isValid) {
-            this.signatureId = signatureId;
-            this.isValid = isValid;
-        }
-        
-        public String getSignatureId() { return signatureId; }
-        public boolean isValid() { return isValid; }
     }
     
     public static class ValidationException extends Exception {

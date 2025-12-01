@@ -1,314 +1,445 @@
 app/src/main/java/org/example/app/
+│
 ├── core/
-│   ├── blockchain/ (existing with enhancements)
+│   │
+│   ├── blockchain/                                           # CORE BLOCKCHAIN LAYER
+│   │   │
 │   │   ├── transaction/
-│   │   │   ├── TokenBankTransaction.java
-│   │   │   ├── BankSettlementTransaction.java
-│   │   │   ├── BankRegistrationTransaction.java
-│   │   │   ├── CurrencyExchangeTransaction.java
-│   │   │   ├── P2PTransferTransaction.java
-│   │   │   ├── ASUSettlementTransaction.java (new - for African Stable Unit)
-│   │   │   ├── ExportTokenTransaction.java (new - for trade layer)
-│   │   │   ├── CrossShardTransaction.java (new - for scalability)
-│   │   │   ├── RollupBatchTransaction.java (new - L2 scaling)
-│   │   │   └── OfflineProofTransaction.java (new - USSD/offline settlements)
+│   │   │   ├── TokenBankTransaction.java                    # ✅ EXISTS
+│   │   │   ├── BankSettlementTransaction.java              # ✅ EXISTS
+│   │   │   ├── BankRegistrationTransaction.java            # ✅ EXISTS
+│   │   │   ├── CurrencyExchangeTransaction.java            # ✅ EXISTS
+│   │   │   ├── P2PTransferTransaction.java                 # ✅ EXISTS
+│   │   │   ├── ASUSettlementTransaction.java               # ✅ EXISTS
+│   │   │   ├── ExportTokenTransaction.java                 # ✅ EXISTS
+│   │   │   ├── CrossShardTransaction.java                  # 🔄 UPGRADE (add atomic cross-shard with DA proofs)
+│   │   │   ├── RollupBatchTransaction.java                 # 🔄 UPGRADE (sovereign rollup batches, not Optimism)
+│   │   │   └── OfflineProofTransaction.java                # ✅ EXISTS
 │   │   │
 │   │   ├── wallet/
-│   │   │   ├── BankVaultWallet.java
-│   │   │   ├── TokenBankUserWallet.java
-│   │   │   ├── LiquidityPool.java
-│   │   │   ├── CitizenWallet.java
-│   │   │   ├── MerchantWallet.java
-│   │   │   ├── GovernmentTreasuryWallet.java
-│   │   │   ├── EmergencyExitWallet.java
-│   │   │   ├── ValidatorStakeWallet.java (new - for staking/slashing)
-│   │   │   ├── AgentNodeWallet.java (new - for retail agents)
-│   │   │   └── OfflineWallet.java (new - USSD/SMS support)
+│   │   │   ├── BankVaultWallet.java                        # ✅ EXISTS
+│   │   │   ├── TokenBankUserWallet.java                    # ✅ EXISTS
+│   │   │   ├── LiquidityPool.java                          # ✅ EXISTS
+│   │   │   ├── CitizenWallet.java                          # ✅ EXISTS
+│   │   │   ├── MerchantWallet.java                         # ✅ EXISTS
+│   │   │   ├── GovernmentTreasuryWallet.java               # ✅ EXISTS
+│   │   │   ├── EmergencyExitWallet.java                    # ✅ EXISTS
+│   │   │   ├── ValidatorStakeWallet.java                   # ✅ EXISTS
+│   │   │   ├── AgentNodeWallet.java                        # ✅ EXISTS
+│   │   │   └── OfflineWallet.java                          # ✅ EXISTS
 │   │   │
 │   │   ├── consensus/
-│   │   │   ├── TokenBankTransactionValidator.java
-│   │   │   ├── FairWeightingValidator.java
-│   │   │   ├── BankRegistrationValidator.java
-│   │   │   ├── AntiManipulationValidator.java
-│   │   │   ├── P2PBridgeValidator.java
-│   │   │   ├── ASUBasketValidator.java (new - validates ASU composition)
-│   │   │   ├── ProofOfReservesValidator.java (new - validates backing)
-│   │   │   ├── ExportTokenValidator.java (new - validates trade receipts)
-│   │   │   ├── CircuitBreakerValidator.java (new - emergency stops)
-│   │   │   └── ReputationScoreValidator.java (new - tracks node reputation)
+│   │   │   ├── TokenBankTransactionValidator.java          # ✅ EXISTS
+│   │   │   ├── FairWeightingValidator.java                 # ✅ EXISTS
+│   │   │   ├── BankRegistrationValidator.java              # ✅ EXISTS
+│   │   │   ├── AntiManipulationValidator.java              # ✅ EXISTS
+│   │   │   ├── P2PBridgeValidator.java                     # ✅ EXISTS
+│   │   │   ├── ASUBasketValidator.java                     # ✅ EXISTS
+│   │   │   ├── ProofOfReservesValidator.java               # ✅ EXISTS
+│   │   │   ├── ExportTokenValidator.java                   # ✅ EXISTS
+│   │   │   ├── CircuitBreakerValidator.java                # ✅ EXISTS
+│   │   │   └── ReputationScoreValidator.java               # 🔄 UPGRADE (add community node reputation)
 │   │   │
 │   │   └── block/
-│   │       ├── BlockchainState.java
-│   │       ├── SettlementRecord.java
-│   │       ├── ShardState.java (new - for multi-shard state)
-│   │       ├── RollupProof.java (new - L2 proofs)
-│   │       └── CheckpointState.java (new - for pruning)
+│   │       ├── BlockchainState.java                        # ✅ EXISTS
+│   │       ├── SettlementRecord.java                       # ✅ EXISTS
+│   │       ├── ShardState.java                             # 🔄 UPGRADE (add DA layer integration)
+│   │       ├── RollupProof.java                            # 🔄 UPGRADE (sovereign rollup proofs, not Ethereum)
+│   │       └── CheckpointState.java                        # ✅ EXISTS
 │   │
-│   └── banking/ (enhanced banking module)
-│       │
-│       ├── registration/
-│       │   ├── BankRegistrationContract.java
-│       │   ├── RegulatorApprovalRegistry.java
-│       │   ├── NodeBankVerifier.java
-│       │   ├── ValidatorNodeRegistry.java (new - tracks validator nodes)
-│       │   ├── ReporterRegistry.java (new - oracle reporters)
-│       │   ├── AuditorRegistry.java (new - independent auditors)
-│       │   └── AIAgentRegistry.java (new - Req #8: AI agent verification)
-│       │
-│       ├── bridge/
-│       │   ├── FiatTokenGateway.java
-│       │   ├── BankAPIEncryptedChannel.java
-│       │   ├── ProofOfFundsValidator.java
-│       │   ├── SettlementReconciliation.java
-│       │   ├── CrossShardBridge.java (new - inter-shard communication)
-│       │   ├── RollupBridge.java (new - L2 to L1 bridge)
-│       │   ├── MobileMoneyGateway.java (new - M-Pesa, MTN MoMo, etc.)
-│       │   ├── USSDGateway.java (new - feature phone access)
-│       │   └── SatelliteSyncBridge.java (new - offline sync via satellite)
-│       │
-│       ├── tokenization/
-│       │   ├── NationalCurrencyToken.java
-│       │   ├── CommodityBackedToken.java
-│       │   ├── AfricanStableUnitToken.java (ASU - Layer 2)
-│       │   ├── ExportToken.java (new - trade layer tokens)
-│       │   ├── SyntheticFXToken.java (new - sUSD, sEUR for hybrid model)
-│       │   ├── ExchangeRateOracle.java
-│       │   ├── AntiManipulationController.java
-│       │   ├── DynamicBasketRebalancer.java (new - auto-adjusts ASU weights)
-│       │   ├── FairRateAlgorithm.java (new - calculates fair rates)
-│       │   └── TokenMintingController.java (new - controls issuance)
-│       │
-│       ├── independence/ (Req #7: independence from banks/governments)
-│       │   ├── DirectWithdrawProtocol.java
-│       │   ├── P2PBridgeContract.java
-│       │   ├── EmergencyExitWallet.java
-│       │   ├── OfflineSettlementTech.java
-│       │   ├── CommunityMeshNode.java (new - local P2P nodes)
-│       │   ├── AgentNetworkManager.java (new - retail agent system)
-│       │   ├── StateChannelManager.java (new - payment channels)
-│       │   ├── OfflineCertificateIssuer.java (new - signed IOUs)
-│       │   └── LocalLiquidityPool.java (new - community liquidity)
-│       │
-│       ├── oracle/ (enhanced for data integrity)
-│       │   ├── OracleAggregator.java (new - multi-source aggregation)
-│       │   ├── OracleReporter.java (new - base reporter class)
-│       │   ├── CustomsOracle.java (new - customs/port data)
-│       │   ├── SatelliteOracle.java (new - remote sensing data)
-│       │   ├── BankFeedOracle.java (new - bank settlement feeds)
-│       │   ├── MarketDataOracle.java (new - DEX/order book data)
-│       │   ├── CommodityPriceOracle.java (new - commodity prices)
-│       │   ├── ReserveAuditOracle.java (new - reserve verification)
-│       │   ├── FXRateOracle.java (new - foreign currency rates)
-│       │   ├── OracleStakingManager.java (new - stake/slash reporters)
-│       │   ├── OracleReputationTracker.java (new - tracks accuracy)
-│       │   ├── CommitRevealOracle.java (new - prevents front-running)
-│       │   ├── TEEAttestation.java (new - hardware attestation)
-│       │   └── MerkleProofGenerator.java (new - data availability proofs)
-│       │
-│       ├── reserves/ (Req #10: Proof of Reserves)
-│       │   ├── ProofOfReservesContract.java (new)
-│       │   ├── ReserveAuditManager.java (new)
-│       │   ├── CommodityReserveTracker.java (new - gold, oil, minerals)
-│       │   ├── TreasuryReserveTracker.java (new - government holdings)
-│       │   ├── ProductionProofTracker.java (new - industrial output)
-│       │   ├── ZKReserveProof.java (new - privacy-preserving proofs)
-│       │   ├── ThresholdSignatureManager.java (new - M-of-N signatures)
-│       │   ├── ReserveBackingCalculator.java (new - calculates backing ratios)
-│       │   └── EmergencyStabilityFund.java (new - emergency reserves)
-│       │
-│       ├── trade/
-│       │   ├── ExportTokenIssuer.java (new - issues export tokens)
-│       │   ├── TradeReceiptVerifier.java (new - verifies Bills of Lading)
-│       │   ├── CustomsSignatureValidator.java (new)
-│       │   ├── LogisticsOracleIntegration.java (new)
-│       │   ├── CommodityTokenizer.java (new - tokenizes commodities)
-│       │   ├── IntraAfricanTradeSettlement.java (new - ASU settlements)
-│       │   ├── ExportFraudDetector.java (new - detects fake exports)
-│       │   └── TradeCollateralManager.java (new - manages trade collateral)
-│       │
-│       ├── compliance/
-│       │   ├── KYCPrivacyLayer.java
-│       │   ├── AMLRiskEngine.java
-│       │   ├── AuditZKProofs.java
-│       │   ├── DisputeResolutionContract.java (new - Req #9)
-│       │   ├── ArbitrationCouncil.java (new - manages arbitrators)
-│       │   ├── EvidenceSubmissionPortal.java (new - on-chain evidence)
-│       │   ├── ChallengeWindowManager.java (new - manages appeals)
-│       │   ├── SanctionEnforcementEngine.java (new - neutral enforcement)
-│       │   ├── RemediationPathTracker.java (new - restoration process)
-│       │   └── ComplianceReportGenerator.java (new)
-│       │
-│       ├── network/
-│       │   ├── LiquidityPoolRegistry.java
-│       │   ├── DecentralizedFXMatcher.java
-│       │   ├── CrossBorderBridge.java
-│       │   ├── ShardCoordinator.java (new - manages shards)
-│       │   ├── PasschainManager.java (new - manages passchains)
-│       │   ├── RelayChainProtocol.java (new - cross-shard messaging)
-│       │   ├── LoadBalancer.java (new - distributes transactions)
-│       │   ├── RegionalNodeCluster.java (new - geographic sharding)
-│       │   └── InteroperabilityProtocol.java (new - cross-chain)
-│       │
-│       ├── scaling/
-│       │   ├── RollupManager.java (new - L2 rollup orchestration)
-│       │   ├── ZKProofGenerator.java (new - zk-SNARKs for rollups)
-│       │   ├── ValidiumEngine.java (new - off-chain data availability)
-│       │   ├── StateChannelFactory.java (new - payment channels)
-│       │   ├── BatchProcessor.java (new - transaction batching)
-│       │   ├── PruningManager.java (new - state pruning)
-│       │   ├── StatelessClientSupport.java (new - lightweight clients)
-│       │   ├── CheckpointManager.java (new - periodic checkpoints)
-│       │   └── ArchiveNodeCoordinator.java (new - historical data)
-│       │
-│       ├── governance/
-│       │   ├── VotingDAO.java
-│       │   ├── FairRateAlgorithmConfig.java
-│       │   ├── EconomicPolicyRules.java
-│       │   ├── LocalDAO.java (new - community level)
-│       │   ├── NationalDAO.java (new - country level)
-│       │   ├── ContinentalDAO.java (new - Africa-wide)
-│       │   ├── ValidatorGovernance.java (new - validator voting)
-│       │   ├── TreasuryGovernance.java (new - manages treasury)
-│       │   ├── ExposureCapManager.java (new - foreign currency limits)
-│       │   ├── EmergencyProposalManager.java (new - emergency votes)
-│       │   ├── ProposalExecutor.java (new - executes approved proposals)
-│       │   ├── SupermajorityCalculator.java (new - multi-party approval)
-│       │   └── GovernanceAuditLog.java (new - transparent records)
-│       │
-│       ├── security/
-│       │   ├── AntiSybilDefense.java (new - prevents fake nodes)
-│       │   ├── SlashingEngine.java (new - punishes bad actors)
-│       │   ├── ReputationScoreManager.java (new - tracks trust)
-│       │   ├── CircuitBreaker.java (new - emergency stops)
-│       │   ├── RateLimitEnforcer.java (new - prevents spam)
-│       │   ├── GeographicDiversityChecker.java (new - ensures distribution)
-│       │   ├── CollateralManager.java (new - manages stakes)
-│       │   ├── FraudProofVerifier.java (new - verifies fraud claims)
-│       │   ├── EmergencyShutdownProtocol.java (new - Req #1: cannot be destroyed)
-│       │   └── DecentralizedRecovery.java (new - recovery mechanism)
-│       │
-│       ├── foreign/
-│       │   ├── FXReferenceManager.java (new - hybrid FX model)
-│       │   ├── SyntheticFXMinter.java (new - creates sUSD, sEUR)
-│       │   ├── FXCollateralManager.java (new - manages synthetic backing)
-│       │   ├── ExternalStablecoinBridge.java (new - isolated bridges)
-│       │   ├── FXExposureMonitor.java (new - tracks foreign exposure)
-│       │   ├── DualPricingEngine.java (new - local + reference pricing)
-│       │   └── FXOracleAggregator.java (new - multi-source FX rates)
-│       │
-│       ├── wallet/
-│       │   ├── BankWallet.java
-│       │   ├── CitizenWallet.java
-│       │   ├── MerchantWallet.java
-│       │   ├── GovernmentTreasuryWallet.java
-│       │   ├── ValidatorWallet.java (new - for validators)
-│       │   ├── AgentWallet.java (new - for retail agents)
-│       │   ├── MultiSigWallet.java (new - for high-security operations)
-│       │   ├── RecoveryWallet.java (new - social recovery)
-│       │   └── AIAgentWallet.java (new - Req #8: AI agent wallets)
-│       │
-│       └── blockchain/ (integration layer)
-│           ├── BlockchainBridge.java
-│           ├── OnChainStateManager.java
-│           ├── TransactionBroadcaster.java
-│           ├── ConfirmationMonitor.java
-│           ├── SettlementProcessor.java
-│           ├── BlockchainEventListener.java
-│           ├── ShardSynchronizer.java (new - syncs shard states)
-│           ├── RollupProofSubmitter.java (new - submits L2 proofs)
-│           ├── CrossChainMessageRelay.java (new - inter-shard messages)
-│           └── FinalityTracker.java (new - tracks finality)
+│   ├── banking/                                             # BANKING LAYER
+│   │   │
+│   │   ├── registration/
+│   │   │   ├── BankRegistrationContract.java               # ✅ EXISTS
+│   │   │   ├── RegulatorApprovalRegistry.java              # ✅ EXISTS
+│   │   │   ├── NodeBankVerifier.java                       # ✅ EXISTS
+│   │   │   ├── ValidatorNodeRegistry.java                  # 🔄 UPGRADE (add 6 node types + cloud limits)
+│   │   │   ├── ReporterRegistry.java                       # ✅ EXISTS
+│   │   │   ├── AuditorRegistry.java                        # ✅ EXISTS
+│   │   │   └── AIAgentRegistry.java                        # ✅ EXISTS
+│   │   │
+│   │   ├── bridge/
+│   │   │   ├── FiatTokenGateway.java                       # ✅ EXISTS
+│   │   │   ├── BankAPIEncryptedChannel.java                # ✅ EXISTS
+│   │   │   ├── ProofOfFundsValidator.java                  # ✅ EXISTS
+│   │   │   ├── SettlementReconciliation.java               # ✅ EXISTS
+│   │   │   ├── CrossShardBridge.java                       # 🔄 UPGRADE (atomic cross-shard with rollback)
+│   │   │   ├── RollupBridge.java                           # 🔄 UPGRADE (sovereign L2 bridge, not Ethereum)
+│   │   │   ├── MobileMoneyGateway.java                     # ✅ EXISTS
+│   │   │   ├── USSDGateway.java                            # ✅ EXISTS
+│   │   │   └── SatelliteSyncBridge.java                    # ✅ EXISTS
+│   │   │
+│   │   ├── tokenization/
+│   │   │   ├── NationalCurrencyToken.java                  # ✅ EXISTS
+│   │   │   ├── CommodityBackedToken.java                   # ✅ EXISTS
+│   │   │   ├── AfricanStableUnitToken.java                 # ✅ EXISTS (ASU - Layer 2)
+│   │   │   ├── ExportToken.java                            # ✅ EXISTS
+│   │   │   ├── SyntheticFXToken.java                       # ✅ EXISTS (sUSD, sEUR)
+│   │   │   ├── ExchangeRateOracle.java                     # ✅ EXISTS
+│   │   │   ├── AntiManipulationController.java             # ✅ EXISTS
+│   │   │   ├── DynamicBasketRebalancer.java                # ✅ EXISTS
+│   │   │   ├── FairRateAlgorithm.java                      # ✅ EXISTS
+│   │   │   └── TokenMintingController.java                 # ✅ EXISTS
+│   │   │
+│   │   ├── independence/                                    # INDEPENDENCE FROM BANKS/GOVERNMENTS
+│   │   │   ├── DirectWithdrawProtocol.java                 # ✅ EXISTS
+│   │   │   ├── P2PBridgeContract.java                      # ✅ EXISTS
+│   │   │   ├── EmergencyExitWallet.java                    # ✅ EXISTS
+│   │   │   ├── OfflineSettlementTech.java                  # ✅ EXISTS
+│   │   │   ├── CommunityMeshNode.java                      # 🔄 UPGRADE (integrate with community node network)
+│   │   │   ├── AgentNetworkManager.java                    # ✅ EXISTS
+│   │   │   ├── StateChannelManager.java                    # ✅ EXISTS
+│   │   │   ├── OfflineCertificateIssuer.java               # ✅ EXISTS
+│   │   │   └── LocalLiquidityPool.java                     # ✅ EXISTS
+│   │   │
+│   │   ├── oracle/                                          # ORACLE DATA LAYER
+│   │   │   ├── OracleAggregator.java                       # ✅ EXISTS
+│   │   │   ├── OracleReporter.java                         # ✅ EXISTS
+│   │   │   ├── CustomsOracle.java                          # ✅ EXISTS
+│   │   │   ├── SatelliteOracle.java                        # ✅ EXISTS
+│   │   │   ├── BankFeedOracle.java                         # ✅ EXISTS
+│   │   │   ├── MarketDataOracle.java                       # ✅ EXISTS
+│   │   │   ├── CommodityPriceOracle.java                   # ✅ EXISTS
+│   │   │   ├── ReserveAuditOracle.java                     # ✅ EXISTS
+│   │   │   ├── FXRateOracle.java                           # ✅ EXISTS
+│   │   │   ├── OracleStakingManager.java                   # ✅ EXISTS
+│   │   │   ├── OracleReputationTracker.java                # ✅ EXISTS
+│   │   │   ├── CommitRevealOracle.java                     # ✅ EXISTS
+│   │   │   ├── TEEAttestation.java                         # ✅ EXISTS
+│   │   │   └── MerkleProofGenerator.java                   # ✅ EXISTS
+│   │   │
+│   │   ├── reserves/                                        # PROOF OF RESERVES
+│   │   │   ├── ProofOfReservesContract.java                # ✅ EXISTS
+│   │   │   ├── ReserveAuditManager.java                    # ✅ EXISTS
+│   │   │   ├── CommodityReserveTracker.java                # ✅ EXISTS
+│   │   │   ├── TreasuryReserveTracker.java                 # ✅ EXISTS
+│   │   │   ├── ProductionProofTracker.java                 # ✅ EXISTS
+│   │   │   ├── ZKReserveProof.java                         # ✅ EXISTS
+│   │   │   ├── ThresholdSignatureManager.java              # ✅ EXISTS
+│   │   │   ├── ReserveBackingCalculator.java               # ✅ EXISTS
+│   │   │   └── EmergencyStabilityFund.java                 # ✅ EXISTS
+│   │   │
+│   │   ├── trade/                                           # TRADE LAYER
+│   │   │   ├── ExportTokenIssuer.java                      # ✅ EXISTS
+│   │   │   ├── TradeReceiptVerifier.java                   # ✅ EXISTS
+│   │   │   ├── CustomsSignatureValidator.java              # ✅ EXISTS
+│   │   │   ├── LogisticsOracleIntegration.java             # ✅ EXISTS
+│   │   │   ├── CommodityTokenizer.java                     # ✅ EXISTS
+│   │   │   ├── IntraAfricanTradeSettlement.java            # ✅ EXISTS
+│   │   │   ├── ExportFraudDetector.java                    # ✅ EXISTS
+│   │   │   └── TradeCollateralManager.java                 # ✅ EXISTS
+│   │   │
+│   │   ├── compliance/                                      # COMPLIANCE & DISPUTE RESOLUTION
+│   │   │   ├── KYCPrivacyLayer.java                        # ✅ EXISTS
+│   │   │   ├── AMLRiskEngine.java                          # ✅ EXISTS
+│   │   │   ├── AuditZKProofs.java                          # ✅ EXISTS
+│   │   │   ├── DisputeResolutionContract.java              # ✅ EXISTS
+│   │   │   ├── ArbitrationCouncil.java                     # ✅ EXISTS
+│   │   │   ├── EvidenceSubmissionPortal.java               # ✅ EXISTS
+│   │   │   ├── ChallengeWindowManager.java                 # ✅ EXISTS
+│   │   │   ├── SanctionEnforcementEngine.java              # ✅ EXISTS
+│   │   │   ├── RemediationPathTracker.java                 # ✅ EXISTS
+│   │   │   └── ComplianceReportGenerator.java              # ✅ EXISTS
+│   │   │
+│   │   ├── network/                                         # NETWORK COORDINATION
+│   │   │   ├── LiquidityPoolRegistry.java                  # ✅ EXISTS
+│   │   │   ├── DecentralizedFXMatcher.java                 # ✅ EXISTS
+│   │   │   ├── CrossBorderBridge.java                      # ✅ EXISTS
+│   │   │   ├── ShardCoordinator.java                       # 🔄 UPGRADE (add DA layer coordination)
+│   │   │   ├── PasschainManager.java                       # ✅ EXISTS
+│   │   │   ├── RelayChainProtocol.java                     # ✅ EXISTS
+│   │   │   ├── LoadBalancer.java                           # ✅ EXISTS
+│   │   │   ├── RegionalNodeCluster.java                    # 🔄 UPGRADE (integrate community nodes)
+│   │   │   └── InteroperabilityProtocol.java               # ✅ EXISTS
+│   │   │
+│   │   ├── scaling/                                         # 🔄 MAJOR ENHANCEMENT - SOVEREIGN SCALING
+│   │   │   ├── RollupManager.java                          # 🔄 UPGRADE (sovereign rollups, not Optimism)
+│   │   │   ├── ZKProofGenerator.java                       # ✅ EXISTS
+│   │   │   ├── ValidiumEngine.java                         # 🔄 UPGRADE (African DA, not Ethereum)
+│   │   │   ├── StateChannelFactory.java                    # ✅ EXISTS
+│   │   │   ├── BatchProcessor.java                         # ✅ EXISTS
+│   │   │   ├── PruningManager.java                         # ✅ EXISTS
+│   │   │   ├── StatelessClientSupport.java                 # ✅ EXISTS
+│   │   │   ├── CheckpointManager.java                      # ✅ EXISTS
+│   │   │   └── ArchiveNodeCoordinator.java                 # 🔄 UPGRADE (African archive nodes)
+│   │   │
+│   │   ├── governance/                                      # ✅ COMPLETE (all 13 files built!)
+│   │   │   ├── VotingDAO.java                              # ✅ COMPLETE (just built)
+│   │   │   ├── FairRateAlgorithmConfig.java                # ✅ COMPLETE (just built)
+│   │   │   ├── EconomicPolicyRules.java                    # ✅ COMPLETE (just built)
+│   │   │   ├── LocalDAO.java                               # ✅ COMPLETE (just built)
+│   │   │   ├── NationalDAO.java                            # ✅ COMPLETE (just built)
+│   │   │   ├── ContinentalDAO.java                         # ✅ COMPLETE (just built)
+│   │   │   ├── ValidatorGovernance.java                    # ✅ COMPLETE (just built)
+│   │   │   ├── TreasuryGovernance.java                     # ✅ COMPLETE (just built)
+│   │   │   ├── ExposureCapManager.java                     # ✅ COMPLETE (just built)
+│   │   │   ├── EmergencyProposalManager.java               # ✅ COMPLETE (just built)
+│   │   │   ├── ProposalExecutor.java                       # ✅ COMPLETE (just built)
+│   │   │   ├── SupermajorityCalculator.java                # ✅ COMPLETE (just built)
+│   │   │   └── GovernanceAuditLog.java                     # ✅ COMPLETE (just built)
+│   │   │
+│   │   ├── security/                                        # SECURITY LAYER
+│   │   │   ├── AntiSybilDefense.java                       # ✅ EXISTS
+│   │   │   ├── SlashingEngine.java                         # ✅ EXISTS
+│   │   │   ├── ReputationScoreManager.java                 # ✅ EXISTS
+│   │   │   ├── CircuitBreaker.java                         # ✅ EXISTS
+│   │   │   ├── RateLimitEnforcer.java                      # ✅ EXISTS
+│   │   │   ├── GeographicDiversityChecker.java             # 🔄 UPGRADE (add community node diversity checks)
+│   │   │   ├── CollateralManager.java                      # ✅ EXISTS
+│   │   │   ├── FraudProofVerifier.java                     # 🔄 UPGRADE (African validator fraud proofs)
+│   │   │   ├── EmergencyShutdownProtocol.java              # ✅ EXISTS
+│   │   │   └── DecentralizedRecovery.java                  # ✅ EXISTS
+│   │   │
+│   │   ├── foreign/                                         # FOREIGN CURRENCY MANAGEMENT
+│   │   │   ├── FXReferenceManager.java                     # ✅ EXISTS
+│   │   │   ├── SyntheticFXMinter.java                      # ✅ EXISTS
+│   │   │   ├── FXCollateralManager.java                    # ✅ EXISTS
+│   │   │   ├── ExternalStablecoinBridge.java               # ✅ EXISTS
+│   │   │   ├── FXExposureMonitor.java                      # ✅ EXISTS
+│   │   │   ├── DualPricingEngine.java                      # ✅ EXISTS
+│   │   │   └── FXOracleAggregator.java                     # ✅ EXISTS
+│   │   │
+│   │   ├── wallet/                                          # WALLET TYPES
+│   │   │   ├── BankWallet.java                             # ✅ EXISTS
+│   │   │   ├── CitizenWallet.java                          # ✅ EXISTS
+│   │   │   ├── MerchantWallet.java                         # ✅ EXISTS
+│   │   │   ├── GovernmentTreasuryWallet.java               # ✅ EXISTS
+│   │   │   ├── ValidatorWallet.java                        # ✅ EXISTS
+│   │   │   ├── AgentWallet.java                            # ✅ EXISTS
+│   │   │   ├── MultiSigWallet.java                         # ✅ EXISTS
+│   │   │   ├── RecoveryWallet.java                         # ✅ EXISTS
+│   │   │   └── AIAgentWallet.java                          # ✅ EXISTS
+│   │   │
+│   │   └── blockchain/                                      # BLOCKCHAIN INTEGRATION LAYER
+│   │       ├── BlockchainBridge.java                       # ✅ EXISTS
+│   │       ├── OnChainStateManager.java                    # ✅ EXISTS
+│   │       ├── TransactionBroadcaster.java                 # ✅ EXISTS
+│   │       ├── ConfirmationMonitor.java                    # ✅ EXISTS
+│   │       ├── SettlementProcessor.java                    # ✅ EXISTS
+│   │       ├── BlockchainEventListener.java                # ✅ EXISTS
+│   │       ├── ShardSynchronizer.java                      # 🔄 UPGRADE (DA layer sync)
+│   │       ├── RollupProofSubmitter.java                   # 🔄 UPGRADE (sovereign rollup proofs)
+│   │       ├── CrossChainMessageRelay.java                 # ✅ EXISTS
+│   │       └── FinalityTracker.java                        # ✅ EXISTS
+│   │
+│   ├── infrastructure/                                      # 🆕 NEW - AFRICAN SOVEREIGNTY INFRASTRUCTURE
+│   │   │
+│   │   ├── community-nodes/                                # 🆕 NEW - COMMUNITY NODE SYSTEM
+│   │   │   ├── CommunityNodeRegistry.java                  # 🆕 NEW (register African community nodes)
+│   │   │   ├── CommunityNodeIncentives.java                # 🆕 NEW (2x rewards for community nodes)
+│   │   │   ├── NodeTypeManager.java                        # 🆕 NEW (manages 6 node types)
+│   │   │   ├── GeographicDistributionEnforcer.java         # 🆕 NEW (enforces <33% per country)
+│   │   │   ├── CloudProviderLimiter.java                   # 🆕 NEW (max 20% cloud total)
+│   │   │   ├── AfricanDatacenterRegistry.java              # 🆕 NEW (African DC catalog)
+│   │   │   ├── UniversityNodeProgram.java                  # 🆕 NEW (university node incentives)
+│   │   │   ├── TelecomNodeIntegration.java                 # 🆕 NEW (MTN, Safaricom integration)
+│   │   │   ├── BankNodeCoordinator.java                    # 🆕 NEW (bank-operated nodes)
+│   │   │   └── GovernmentBackupNodes.java                  # 🆕 NEW (government redundancy)
+│   │   │
+│   │   ├── data-availability/                              # 🆕 NEW - AFRICAN DATA AVAILABILITY LAYER
+│   │   │   ├── AfricanDataAvailabilityLayer.java           # 🆕 NEW (35-node DA system)
+│   │   │   ├── RegionalDACommittee.java                    # 🆕 NEW (5 regional committees)
+│   │   │   ├── NorthAfricaDACommittee.java                 # 🆕 NEW (Morocco, Egypt, Algeria, Tunisia, Libya, Sudan, Mauritania)
+│   │   │   ├── WestAfricaDACommittee.java                  # 🆕 NEW (Nigeria, Ghana, Senegal, Côte d'Ivoire, Burkina Faso, Mali, Niger)
+│   │   │   ├── EastAfricaDACommittee.java                  # 🆕 NEW (Kenya, Ethiopia, Tanzania, Uganda, Rwanda, Somalia, Djibouti)
+│   │   │   ├── SouthernAfricaDACommittee.java              # 🆕 NEW (SA, Botswana, Namibia, Zimbabwe, Mozambique, Zambia, Angola)
+│   │   │   ├── CentralAfricaDACommittee.java               # 🆕 NEW (Cameroon, DRC, Gabon, Chad, CAR, Congo, Eq. Guinea)
+│   │   │   ├── DataAvailabilityProof.java                  # 🆕 NEW (DA proofs for rollups)
+│   │   │   ├── ByzantineFaultTolerance.java                # 🆕 NEW (BFT consensus for DA)
+│   │   │   ├── DataReplicationManager.java                 # 🆕 NEW (replicate across 5 regions)
+│   │   │   └── DACommitteeRotation.java                    # 🆕 NEW (rotate committee members)
+│   │   │
+│   │   ├── sovereign-rollup/                               # 🆕 NEW - SOVEREIGN L2 SCALING
+│   │   │   ├── AfricanSovereignRollup.java                 # 🆕 NEW (independent L2, not Optimism/Arbitrum)
+│   │   │   ├── SequencerCommittee.java                     # 🆕 NEW (5-node rotating sequencers)
+│   │   │   ├── SequencerRotation.java                      # 🆕 NEW (rotate to prevent control)
+│   │   │   ├── DecentralizedSequencer.java                 # 🆕 NEW (no single company control)
+│   │   │   ├── RollupBatchProcessor.java                   # 🆕 NEW (batch 1000 txs)
+│   │   │   ├── FraudProofSubmitter.java                    # 🆕 NEW (anyone can submit fraud proofs)
+│   │   │   ├── FraudProofVerifier.java                     # 🆕 NEW (African validators verify)
+│   │   │   ├── L1SettlementBridge.java                     # 🆕 NEW (settles to YOUR 20 shards, not Ethereum)
+│   │   │   ├── RollupStateManager.java                     # 🆕 NEW (L2 state management)
+│   │   │   ├── WithdrawalQueue.java                        # 🆕 NEW (7-day fraud proof window)
+│   │   │   ├── OptimisticExecutionEngine.java              # 🆕 NEW (optimistic execution)
+│   │   │   └── RollupGovernance.java                       # 🆕 NEW (rollup parameter governance)
+│   │   │
+│   │   ├── storage/                                        # 🆕 NEW - DISTRIBUTED STORAGE
+│   │   │   ├── DistributedCassandraManager.java            # 🆕 NEW (Cassandra across Africa)
+│   │   │   ├── CassandraClusterConfig.java                 # 🆕 NEW (5-region cluster)
+│   │   │   ├── IPFSStorageController.java                  # 🆕 NEW (IPFS with African nodes only)
+│   │   │   ├── IPFSAfricanNode.java                        # 🆕 NEW (African IPFS nodes)
+│   │   │   ├── IPFSPinningService.java                     # 🆕 NEW (pin critical data)
+│   │   │   ├── ArweaveArchiver.java                        # 🆕 NEW (permanent archive)
+│   │   │   ├── ArweaveAfricanGateway.java                  # 🆕 NEW (African Arweave gateways)
+│   │   │   ├── RegionalStorageReplication.java             # 🆕 NEW (5x replication)
+│   │   │   ├── StorageSharding.java                        # 🆕 NEW (shard storage by region)
+│   │   │   └── DataAvailabilitySampling.java               # 🆕 NEW (random sampling for verification)
+│   │   │
+│   │   ├── network/                                        # 🆕 NEW - CENSORSHIP-RESISTANT NETWORKING
+│   │   │   ├── AfricanSubmarineCableRouter.java            # 🆕 NEW (route via African cables only)
+│   │   │   ├── SubmarineCableRegistry.java                 # 🆕 NEW (ACE, WACS, SEACOM, EASSy cables)
+│   │   │   ├── TelecomIntegration.java                     # 🆕 NEW (MTN, Safaricom, Vodacom, Orange, Airtel)
+│   │   │   ├── MTNIntegration.java                         # 🆕 NEW (MTN network integration)
+│   │   │   ├── SafaricomIntegration.java                   # 🆕 NEW (Safaricom M-Pesa integration)
+│   │   │   ├── VodacomIntegration.java                     # 🆕 NEW (Vodacom integration)
+│   │   │   ├── MobileNodeRunner.java                       # 🆕 NEW (run nodes on mobile networks)
+│   │   │   ├── OfflineTransactionQueue.java                # 🆕 NEW (queue during offline periods)
+│   │   │   ├── NetworkPathOptimizer.java                   # 🆕 NEW (optimize African routing)
+│   │   │   └── LatencyMonitor.java                         # 🆕 NEW (monitor inter-African latency)
+│   │   │
+│   │   ├── resilience/                                     # 🆕 NEW - SANCTION & CENSORSHIP RESISTANCE
+│   │   │   ├── SanctionResistanceProtocol.java             # 🆕 NEW (resist foreign sanctions)
+│   │   │   ├── DNSFailoverManager.java                     # 🆕 NEW (African DNS alternatives)
+│   │   │   ├── AfricanDNSRegistry.java                     # 🆕 NEW (African DNS servers)
+│   │   │   ├── TorIntegration.java                         # 🆕 NEW (Tor for censorship resistance)
+│   │   │   ├── TorBridgeManager.java                       # 🆕 NEW (manage Tor bridges)
+│   │   │   ├── I2PIntegration.java                         # 🆕 NEW (I2P alternative network)
+│   │   │   ├── SatelliteBackupChannel.java                 # 🆕 NEW (satellite internet backup)
+│   │   │   ├── StarlinkIntegration.java                    # 🆕 NEW (Starlink backup)
+│   │   │   ├── MeshNetworkProtocol.java                    # 🆕 NEW (mesh networking)
+│   │   │   └── EmergencyBroadcastSystem.java               # 🆕 NEW (emergency communications)
+│   │   │
+│   │   └── monitoring/                                     # 🆕 NEW - INFRASTRUCTURE MONITORING
+│   │       ├── InfrastructureHealthMonitor.java            # 🆕 NEW (monitor all infrastructure)
+│   │       ├── NodeDistributionMonitor.java                # 🆕 NEW (track geographic distribution)
+│   │       ├── CloudProviderMonitor.java                   # 🆕 NEW (ensure <20% cloud)
+│   │       ├── CommunityNodeTracker.java                   # 🆕 NEW (track community nodes)
+│   │       ├── DALayerMonitor.java                         # 🆕 NEW (monitor DA availability)
+│   │       ├── SequencerHealthMonitor.java                 # 🆕 NEW (monitor rollup sequencers)
+│   │       ├── StorageReplicationMonitor.java              # 🆕 NEW (verify 5x replication)
+│   │       ├── NetworkLatencyMonitor.java                  # 🆕 NEW (inter-African latency)
+│   │       ├── SanctionDetector.java                       # 🆕 NEW (detect sanction attempts)
+│   │       └── AlertManager.java                           # 🆕 NEW (alert on infrastructure issues)
+│   │
+│   └── integration/                                        # 🆕 NEW - INTEGRATION LAYER
+│       ├── GovernanceScalingBridge.java                    # 🆕 NEW (governance ↔ scaling integration)
+│       ├── CommunityNodeGovernance.java                    # 🆕 NEW (community votes on node policies)
+│       ├── ScalabilityMonitor.java                         # 🆕 NEW (monitor TPS, latency, throughput)
+│       ├── InfrastructureGovernance.java                   # 🆕 NEW (governance for infrastructure)
+│       ├── DALayerGovernance.java                          # 🆕 NEW (governance for DA committees)
+│       ├── RollupGovernanceIntegration.java                # 🆕 NEW (L1 governance controls L2)
+│       └── EmergencyCoordinator.java                       # 🆕 NEW (coordinate emergency responses)
 │
-├── ui/
+├── ui/                                                      # UI LAYER (ALL EXISTS)
 │   ├── banking/
 │   │   ├── dashboard/
-│   │   │   ├── BankingDashboardController.java
-│   │   │   ├── TokenExchangeView.java
-│   │   │   ├── CurrencyMonitorView.java
-│   │   │   ├── ASUMonitorView.java (new - ASU basket visualization)
-│   │   │   ├── ReservesView.java (new - Req #10: shows reserves)
-│   │   │   ├── OracleHealthView.java (new - oracle status)
-│   │   │   └── NetworkScalabilityView.java (new - shard performance)
+│   │   │   ├── BankingDashboardController.java             # ✅ EXISTS
+│   │   │   ├── TokenExchangeView.java                      # ✅ EXISTS
+│   │   │   ├── CurrencyMonitorView.java                    # ✅ EXISTS
+│   │   │   ├── ASUMonitorView.java                         # ✅ EXISTS
+│   │   │   ├── ReservesView.java                           # ✅ EXISTS
+│   │   │   ├── OracleHealthView.java                       # ✅ EXISTS
+│   │   │   ├── NetworkScalabilityView.java                 # 🔄 UPGRADE (add community node metrics)
+│   │   │   ├── CommunityNodeDashboard.java                 # 🆕 NEW (community node overview)
+│   │   │   ├── DALayerDashboard.java                       # 🆕 NEW (DA layer status)
+│   │   │   └── RollupDashboard.java                        # 🆕 NEW (sovereign rollup metrics)
 │   │   │
 │   │   ├── transaction/
-│   │   │   ├── P2PTransferView.java
-│   │   │   ├── BankTransferView.java
-│   │   │   ├── EmergencyWithdrawalView.java
-│   │   │   ├── ASUSettlementView.java (new - ASU transactions)
-│   │   │   ├── ExportTokenView.java (new - trade tokens)
-│   │   │   ├── CrossBorderView.java (new - inter-country)
-│   │   │   ├── OfflineTransactionView.java (new - USSD/offline)
-│   │   │   └── RollupBatchView.java (new - L2 transactions)
+│   │   │   ├── P2PTransferView.java                        # ✅ EXISTS
+│   │   │   ├── BankTransferView.java                       # ✅ EXISTS
+│   │   │   ├── EmergencyWithdrawalView.java                # ✅ EXISTS
+│   │   │   ├── ASUSettlementView.java                      # ✅ EXISTS
+│   │   │   ├── ExportTokenView.java                        # ✅ EXISTS
+│   │   │   ├── CrossBorderView.java                        # ✅ EXISTS
+│   │   │   ├── OfflineTransactionView.java                 # ✅ EXISTS
+│   │   │   └── RollupBatchView.java                        # 🔄 UPGRADE (sovereign rollup batches)
 │   │   │
 │   │   ├── wallet/
-│   │   │   ├── CitizenWalletView.java
-│   │   │   ├── MerchantWalletView.java
-│   │   │   ├── BankWalletView.java
-│   │   │   ├── GovernmentWalletView.java
-│   │   │   ├── ValidatorWalletView.java (new)
-│   │   │   ├── AgentWalletView.java (new - for retail agents)
-│   │   │   └── AIAgentWalletView.java (new - Req #8)
+│   │   │   ├── CitizenWalletView.java                      # ✅ EXISTS
+│   │   │   ├── MerchantWalletView.java                     # ✅ EXISTS
+│   │   │   ├── BankWalletView.java                         # ✅ EXISTS
+│   │   │   ├── GovernmentWalletView.java                   # ✅ EXISTS
+│   │   │   ├── ValidatorWalletView.java                    # ✅ EXISTS
+│   │   │   ├── AgentWalletView.java                        # ✅ EXISTS
+│   │   │   └── AIAgentWalletView.java                      # ✅ EXISTS
 │   │   │
 │   │   ├── governance/
-│   │   │   ├── DAOVotingView.java (new - voting interface)
-│   │   │   ├── ProposalSubmissionView.java (new)
-│   │   │   ├── TreasuryManagementView.java (new)
-│   │   │   ├── ValidatorStakingView.java (new)
-│   │   │   └── ExposureCapView.java (new - foreign currency limits)
+│   │   │   ├── DAOVotingView.java                          # ✅ EXISTS
+│   │   │   ├── ProposalSubmissionView.java                 # ✅ EXISTS
+│   │   │   ├── TreasuryManagementView.java                 # ✅ EXISTS
+│   │   │   ├── ValidatorStakingView.java                   # ✅ EXISTS
+│   │   │   ├── ExposureCapView.java                        # ✅ EXISTS
+│   │   │   ├── CommunityNodeGovernanceView.java            # 🆕 NEW (vote on node policies)
+│   │   │   └── InfrastructureGovernanceView.java           # 🆕 NEW (infrastructure decisions)
 │   │   │
 │   │   ├── compliance/
-│   │   │   ├── DisputeResolutionView.java (new - Req #9)
-│   │   │   ├── ArbitrationView.java (new)
-│   │   │   ├── EvidenceSubmissionView.java (new)
-│   │   │   ├── ComplianceAuditView.java (new)
-│   │   │   └── SanctionStatusView.java (new)
+│   │   │   ├── DisputeResolutionView.java                  # ✅ EXISTS
+│   │   │   ├── ArbitrationView.java                        # ✅ EXISTS
+│   │   │   ├── EvidenceSubmissionView.java                 # ✅ EXISTS
+│   │   │   ├── ComplianceAuditView.java                    # ✅ EXISTS
+│   │   │   └── SanctionStatusView.java                     # ✅ EXISTS
 │   │   │
 │   │   ├── trade/
-│   │   │   ├── ExportTokenCreationView.java (new)
-│   │   │   ├── TradeSettlementView.java (new)
-│   │   │   ├── CommodityTokenView.java (new)
-│   │   │   └── IntraAfricanTradeView.java (new)
+│   │   │   ├── ExportTokenCreationView.java                # ✅ EXISTS
+│   │   │   ├── TradeSettlementView.java                    # ✅ EXISTS
+│   │   │   ├── CommodityTokenView.java                     # ✅ EXISTS
+│   │   │   └── IntraAfricanTradeView.java                  # ✅ EXISTS
 │   │   │
 │   │   ├── oracle/
-│   │   │   ├── OracleManagementView.java (new)
-│   │   │   ├── ReporterRegistrationView.java (new)
-│   │   │   ├── DataFeedMonitorView.java (new)
-│   │   │   ├── ReputationDashboardView.java (new)
-│   │   │   └── DisputeOracleView.java (new)
+│   │   │   ├── OracleManagementView.java                   # ✅ EXISTS
+│   │   │   ├── ReporterRegistrationView.java               # ✅ EXISTS
+│   │   │   ├── DataFeedMonitorView.java                    # ✅ EXISTS
+│   │   │   ├── ReputationDashboardView.java                # ✅ EXISTS
+│   │   │   └── DisputeOracleView.java                      # ✅ EXISTS
+│   │   │
+│   │   ├── infrastructure/                                 # 🆕 NEW - INFRASTRUCTURE UI
+│   │   │   ├── CommunityNodeManagementView.java            # 🆕 NEW (manage community nodes)
+│   │   │   ├── NodeRegistrationView.java                   # 🆕 NEW (register new nodes)
+│   │   │   ├── GeographicDistributionView.java             # 🆕 NEW (visualize distribution)
+│   │   │   ├── CloudProviderMonitorView.java               # 🆕 NEW (cloud usage dashboard)
+│   │   │   ├── DACommitteeView.java                        # 🆕 NEW (DA committee status)
+│   │   │   ├── SequencerCommitteeView.java                 # 🆕 NEW (sequencer status)
+│   │   │   ├── StorageReplicationView.java                 # 🆕 NEW (storage health)
+│   │   │   └── NetworkHealthView.java                      # 🆕 NEW (network status)
 │   │   │
 │   │   └── admin/
-│   │       ├── BankRegistrationView.java
-│   │       ├── RateConfigurationView.java
-│   │       ├── GovernanceVotingView.java
-│   │       ├── ValidatorManagementView.java (new)
-│   │       ├── ShardManagementView.java (new)
-│   │       ├── EmergencyControlView.java (new - Req #1)
-│   │       ├── ReserveAuditView.java (new - Req #10)
-│   │       └── SystemHealthView.java (new - overall monitoring)
+│   │       ├── BankRegistrationView.java                   # ✅ EXISTS
+│   │       ├── RateConfigurationView.java                  # ✅ EXISTS
+│   │       ├── GovernanceVotingView.java                   # ✅ EXISTS
+│   │       ├── ValidatorManagementView.java                # ✅ EXISTS
+│   │       ├── ShardManagementView.java                    # ✅ EXISTS
+│   │       ├── EmergencyControlView.java                   # ✅ EXISTS
+│   │       ├── ReserveAuditView.java                       # ✅ EXISTS
+│   │       ├── SystemHealthView.java                       # 🔄 UPGRADE (add infrastructure health)
+│   │       ├── InfrastructureAdminView.java                # 🆕 NEW (infrastructure admin panel)
+│   │       ├── CommunityNodeAdminView.java                 # 🆕 NEW (community node admin)
+│   │       └── SovereigntyMetricsView.java                 # 🆕 NEW (sovereignty KPIs)
 │   │
-│   └── common/ (existing UI components)
+│   └── common/
+│       └── (existing UI components)                        # ✅ EXISTS
 │
-└── utils/
+└── utils/                                                   # UTILITIES LAYER
     ├── encryption/
-    │   ├── AfricanEncryptionScheme.java (new - Req #3: unique encryption)
-    │   ├── BankAPIEncryption.java (new)
-    │   ├── ZKProofUtils.java (new)
-    │   └── TEEIntegration.java (new)
+    │   ├── AfricanEncryptionScheme.java                    # ✅ EXISTS
+    │   ├── BankAPIEncryption.java                          # ✅ EXISTS
+    │   ├── ZKProofUtils.java                               # ✅ EXISTS
+    │   └── TEEIntegration.java                             # ✅ EXISTS
     │
     ├── offline/
-    │   ├── USSDProtocolHandler.java (new - feature phone support)
-    │   ├── SMSTransactionParser.java (new)
-    │   ├── OfflineCertificateGenerator.java (new)
-    │   └── SyncQueueManager.java (new)
+    │   ├── USSDProtocolHandler.java                        # ✅ EXISTS
+    │   ├── SMSTransactionParser.java                       # ✅ EXISTS
+    │   ├── OfflineCertificateGenerator.java                # ✅ EXISTS
+    │   └── SyncQueueManager.java                           # ✅ EXISTS
     │
     ├── scalability/
-    │   ├── ShardingUtils.java (new)
-    │   ├── CompressionUtils.java (new - protobuf/CBOR)
-    │   ├── BatchingUtils.java (new)
-    │   └── PruningUtils.java (new)
+    │   ├── ShardingUtils.java                              # ✅ EXISTS
+    │   ├── CompressionUtils.java                           # ✅ EXISTS
+    │   ├── BatchingUtils.java                              # ✅ EXISTS
+    │   └── PruningUtils.java                               # ✅ EXISTS
+    │
+    ├── sovereignty/                                        # 🆕 NEW - SOVEREIGNTY UTILITIES
+    │   ├── GeographicDistributionCalculator.java           # 🆕 NEW (calculate Herfindahl index)
+    │   ├── CloudProviderDetector.java                      # 🆕 NEW (detect which cloud provider)
+    │   ├── AfricanRoutingUtils.java                        # 🆕 NEW (calculate African routes)
+    │   ├── SubmarineCableMapper.java                       # 🆕 NEW (map submarine cables)
+    │   ├── SanctionRiskAssessor.java                       # 🆕 NEW (assess sanction risks)
+    │   └── IndependenceMetrics.java                        # 🆕 NEW (calculate independence score)
     │
     └── monitoring/
-        ├── MetricsCollector.java (new)
-        ├── AlertManager.java (new)
-        ├── HealthCheckRunner.java (new)
-        └── TransparencyLogger.java (new - public audit logs)
+        ├── MetricsCollector.java                           # ✅ EXISTS
+        ├── AlertManager.java                               # ✅ EXISTS
+        ├── HealthCheckRunner.java                          # ✅ EXISTS
+        ├── TransparencyLogger.java                         # ✅ EXISTS
+        ├── InfrastructureMetrics.java                      # 🆕 NEW (infrastructure KPIs)
+        ├── SovereigntyScore.java                           # 🆕 NEW (sovereignty index 0-100)
+        └── DecentralizationIndex.java                      # 🆕 NEW (decentralization metrics)

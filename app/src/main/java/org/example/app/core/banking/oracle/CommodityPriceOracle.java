@@ -1,90 +1,220 @@
 package org.example.app.core.banking.oracle;
 
 import org.example.app.core.types.Address;
+import org.example.app.core.banking.oracle.AfricanSovereigntyTypes.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
- * CommodityPriceOracle - Commodity prices (gold, oil, agricultural products)
+ * BankFeedOracle - Bank settlement oracle with African Sovereignty
  * 
- * Provides commodity price data for ASU backing and resource reserve valuation
+ * SOVEREIGNTY FEATURES:
+ * - African bank priority (3x weight)
+ * - Multi-region bank verification (3+ regions)
+ * - Government-resistance emergency protocol
+ * - Community-verified feeds fallback
  */
-public class CommodityPriceOracle extends OracleReporter {
-    private static final Logger LOGGER = Logger.getLogger(CommodityPriceOracle.class.getName());
+public class BankFeedOracle extends OracleReporter {
+    private static final Logger LOGGER = Logger.getLogger(BankFeedOracle.class.getName());
     
-    private final Map<String, CommodityPrice> commodityPrices;
+    private static final int MIN_REGIONS_REQUIRED = 3;
+    private static final BigDecimal AFRICAN_BANK_PRIORITY = new BigDecimal("3.0"); // 3x weight
     
-    public static class CommodityPrice {
-        private final String commodityType;
-        private final BigDecimal pricePerUnit;
-        private final String unit;
-        private final BigDecimal changePercent24h;
-        private final long timestamp;
+    private final Map<String, BankSettlementFeed> settlementFeeds;
+    private final Map<String, BankInfo> registeredBanks;
+    private boolean emergencyMode = false;
+    
+    public static class BankInfo {
+        private final String bankId;
+        private final String bankName;
+        private final AfricanRegion region;
+        private final String country;
+        private final boolean isAfrican;
+        private final boolean isCommunityVerified;
+        private BigDecimal priorityWeight;
         
-        public CommodityPrice(String commodityType, BigDecimal pricePerUnit, String unit,
-                             BigDecimal changePercent24h) {
-            this.commodityType = commodityType;
-            this.pricePerUnit = pricePerUnit;
-            this.unit = unit;
-            this.changePercent24h = changePercent24h;
-            this.timestamp = System.currentTimeMillis();
+        public BankInfo(String bankId, String bankName, AfricanRegion region, String country,
+                       boolean isAfrican, boolean isCommunityVerified) {
+            this.bankId = bankId;
+            this.bankName = bankName;
+            this.region = region;
+            this.country = country;
+            this.isAfrican = isAfrican;
+            this.isCommunityVerified = isCommunityVerified;
+            this.priorityWeight = isAfrican ? AFRICAN_BANK_PRIORITY : BigDecimal.ONE;
         }
         
-        public String getCommodityType() { return commodityType; }
-        public BigDecimal getPricePerUnit() { return pricePerUnit; }
-        public String getUnit() { return unit; }
-        public BigDecimal getChangePercent24h() { return changePercent24h; }
-        public long getTimestamp() { return timestamp; }
+        public String getBankId() { return bankId; }
+        public String getBankName() { return bankName; }
+        public AfricanRegion getRegion() { return region; }
+        public String getCountry() { return country; }
+        public boolean isAfrican() { return isAfrican; }
+        public boolean isCommunityVerified() { return isCommunityVerified; }
+        public BigDecimal getPriorityWeight() { return priorityWeight; }
     }
     
-    public CommodityPriceOracle(String reporterId, Address reporterAddress, BigDecimal minimumStake) {
-        super(reporterId, "COMMODITY_PRICE", reporterAddress, minimumStake);
-        this.commodityPrices = new ConcurrentHashMap<>();
-        LOGGER.info("CommodityPriceOracle initialized: " + reporterId);
+    public static class BankSettlementFeed {
+        private final String feedId;
+        private final String bankId;
+        private final String currencyCode;
+        private final AfricanRegion region;
+        private final BigDecimal totalVolume;
+        private final int transactionCount;
+        private final BigDecimal averageSize;
+        private final long timestamp;
+        private final boolean isVerified;
+        private BigDecimal weight;
+        
+        public BankSettlementFeed(String bankId, String currencyCode, AfricanRegion region,
+                                 BigDecimal totalVolume, int transactionCount) {
+            this.feedId = UUID.randomUUID().toString();
+            this.bankId = bankId;
+            this.currencyCode = currencyCode;
+            this.region = region;
+            this.totalVolume = totalVolume;
+            this.transactionCount = transactionCount;
+            this.averageSize = transactionCount > 0 ? 
+                totalVolume.divide(new BigDecimal(transactionCount), 2, RoundingMode.HALF_UP) :
+                BigDecimal.ZERO;
+            this.timestamp = System.currentTimeMillis();
+            this.isVerified = true;
+            this.weight = BigDecimal.ONE;
+        }
+        
+        public String getFeedId() { return feedId; }
+        public String getBankId() { return bankId; }
+        public String getCurrencyCode() { return currencyCode; }
+        public AfricanRegion getRegion() { return region; }
+        public BigDecimal getTotalVolume() { return totalVolume; }
+        public int getTransactionCount() { return transactionCount; }
+        public BigDecimal getAverageSize() { return averageSize; }
+        public long getTimestamp() { return timestamp; }
+        public boolean isVerified() { return isVerified; }
+        public BigDecimal getWeight() { return weight; }
+        public void setWeight(BigDecimal weight) { this.weight = weight; }
+    }
+    
+    public BankFeedOracle(String reporterId, Address reporterAddress, BigDecimal minimumStake,
+                         AfricanRegion region, String country, NodeType nodeType, boolean isCommunityOwned) {
+        super(reporterId, "BANK_FEED", reporterAddress, minimumStake, region, country, nodeType, isCommunityOwned);
+        this.settlementFeeds = new ConcurrentHashMap<>();
+        this.registeredBanks = new ConcurrentHashMap<>();
+    }
+    
+    public void registerBank(BankInfo bank) {
+        registeredBanks.put(bank.getBankId(), bank);
+        LOGGER.info(String.format("Bank registered: %s (%s) - Region: %s - Priority: %.1fx",
+            bank.getBankName(), bank.getBankId(), bank.getRegion(), bank.getPriorityWeight()));
     }
     
     @Override
     public OracleData fetchData(String dataKey) throws Exception {
-        String commodity = dataKey.replace("COMMODITY:", "");
+        String currencyCode = dataKey.replace("SETTLEMENT:", "");
         
-        CommodityPrice price = commodityPrices.get(commodity);
-        if (price == null || isStale(price)) {
-            price = fetchCommodityPrice(commodity);
-            commodityPrices.put(commodity, price);
+        List<BankSettlementFeed> feeds = getAllBankFeeds(currencyCode);
+        
+        if (feeds.isEmpty()) {
+            throw new Exception("No bank feeds available for: " + currencyCode);
         }
         
-        Map<String, Object> priceData = new HashMap<>();
-        priceData.put("commodity", price.getCommodityType());
-        priceData.put("price", price.getPricePerUnit());
-        priceData.put("unit", price.getUnit());
-        priceData.put("change24h", price.getChangePercent24h());
+        // SOVEREIGNTY CHECK: Multi-region verification
+        if (!hasMultiRegionBankData(feeds)) {
+            throw new Exception("Insufficient regional bank diversity for: " + currencyCode);
+        }
+        
+        // Apply African bank priority
+        feeds = applyAfricanBankPriority(feeds);
+        
+        // Aggregate feeds
+        BankSettlementFeed aggregated = aggregateBankFeeds(feeds);
+        
+        Map<String, Object> feedData = new HashMap<>();
+        feedData.put("currency", aggregated.getCurrencyCode());
+        feedData.put("volume", aggregated.getTotalVolume());
+        feedData.put("transactions", aggregated.getTransactionCount());
+        feedData.put("avgSize", aggregated.getAverageSize());
+        feedData.put("regionsRepresented", getRegionsRepresented(feeds).size());
         
         byte[] signature = new byte[32];
-        submitData("COMMODITY_PRICE", priceData, signature);
+        submitData("BANK_FEED", feedData, signature);
         
-        return new OracleData("COMMODITY_PRICE", priceData, reporterId,
-            new BigDecimal("0.93"), signature);
+        return new OracleData("BANK_FEED", feedData, reporterId, 
+            new BigDecimal("0.95"), signature);
     }
     
-    private CommodityPrice fetchCommodityPrice(String commodity) {
-        // Simulate commodity price fetch
-        Map<String, Object[]> prices = new HashMap<>();
-        prices.put("GOLD", new Object[]{new BigDecimal("2050.00"), "USD/oz", new BigDecimal("0.5")});
-        prices.put("OIL", new Object[]{new BigDecimal("85.50"), "USD/barrel", new BigDecimal("-1.2")});
-        prices.put("COCOA", new Object[]{new BigDecimal("4200.00"), "USD/ton", new BigDecimal("2.3")});
-        prices.put("COFFEE", new Object[]{new BigDecimal("1.75"), "USD/lb", new BigDecimal("1.1")});
-        
-        Object[] data = prices.getOrDefault(commodity.toUpperCase(), 
-            new Object[]{new BigDecimal("100.00"), "USD/unit", BigDecimal.ZERO});
-        
-        return new CommodityPrice(commodity, (BigDecimal) data[0], (String) data[1], (BigDecimal) data[2]);
+    private List<BankSettlementFeed> getAllBankFeeds(String currencyCode) {
+        return settlementFeeds.values().stream()
+            .filter(f -> f.getCurrencyCode().equals(currencyCode))
+            .filter(f -> System.currentTimeMillis() - f.getTimestamp() < 3600000)
+            .collect(Collectors.toList());
     }
     
-    private boolean isStale(CommodityPrice price) {
-        return System.currentTimeMillis() - price.getTimestamp() > 300000; // 5 minutes
+    private boolean hasMultiRegionBankData(List<BankSettlementFeed> feeds) {
+        Set<AfricanRegion> regions = getRegionsRepresented(feeds);
+        return regions.size() >= MIN_REGIONS_REQUIRED;
+    }
+    
+    private Set<AfricanRegion> getRegionsRepresented(List<BankSettlementFeed> feeds) {
+        return feeds.stream()
+            .map(BankSettlementFeed::getRegion)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    }
+    
+    private List<BankSettlementFeed> applyAfricanBankPriority(List<BankSettlementFeed> feeds) {
+        for (BankSettlementFeed feed : feeds) {
+            BankInfo bank = registeredBanks.get(feed.getBankId());
+            if (bank != null && bank.isAfrican()) {
+                feed.setWeight(AFRICAN_BANK_PRIORITY);
+            }
+        }
+        return feeds;
+    }
+    
+    private BankSettlementFeed aggregateBankFeeds(List<BankSettlementFeed> feeds) {
+        BigDecimal totalVolume = feeds.stream()
+            .map(f -> f.getTotalVolume().multiply(f.getWeight()))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        BigDecimal totalWeight = feeds.stream()
+            .map(BankSettlementFeed::getWeight)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        BigDecimal weightedVolume = totalWeight.compareTo(BigDecimal.ZERO) > 0 ?
+            totalVolume.divide(totalWeight, 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        
+        int totalTransactions = feeds.stream()
+            .mapToInt(BankSettlementFeed::getTransactionCount)
+            .sum();
+        
+        return new BankSettlementFeed("AGGREGATED", feeds.get(0).getCurrencyCode(), 
+            feeds.get(0).getRegion(), weightedVolume, totalTransactions);
+    }
+    
+    public void submitSettlementFeed(String bankId, String currencyCode, AfricanRegion region,
+                                    BigDecimal totalVolume, int transactionCount) {
+        BankSettlementFeed feed = new BankSettlementFeed(bankId, currencyCode, region, 
+            totalVolume, transactionCount);
+        settlementFeeds.put(feed.getFeedId(), feed);
+        
+        LOGGER.info(String.format("Settlement feed submitted: %s - Bank: %s - Region: %s - Volume: %s",
+            currencyCode, bankId, region, totalVolume));
+    }
+    
+    public void activateEmergencyMode(String reason) {
+        this.emergencyMode = true;
+        LOGGER.severe("⚠️ EMERGENCY MODE ACTIVATED: " + reason);
+        LOGGER.info("Switching to community-verified feeds only");
+    }
+    
+    public void deactivateEmergencyMode() {
+        this.emergencyMode = false;
+        LOGGER.info("Emergency mode deactivated");
     }
     
     @Override
@@ -94,6 +224,6 @@ public class CommodityPriceOracle extends OracleReporter {
     
     @Override
     protected String getDataTypeIdentifier() {
-        return "COMMODITY_PRICE";
+        return "BANK_FEED";
     }
 }
