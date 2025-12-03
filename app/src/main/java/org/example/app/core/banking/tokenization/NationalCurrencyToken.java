@@ -72,7 +72,7 @@ public class NationalCurrencyToken extends ERC20Token {
     private final Blockchain blockchain;
     private final PKIManager pkiManager;
     private final ExchangeRateOracle exchangeRateOracle;
-    private final FairRateAlgorithm fairRateAlgorithm;
+    private final FairrateAlgorithm fairRateAlgorithm;
     private final AntiManipulationController antiManipulationController;
     private final TokenMintingController mintingController;
     
@@ -344,7 +344,7 @@ public class NationalCurrencyToken extends ERC20Token {
                                 String creator, boolean isAfricanCurrency,
                                 BlockchainState blockchainState, Blockchain blockchain,
                                 PKIManager pkiManager, ExchangeRateOracle exchangeRateOracle,
-                                FairRateAlgorithm fairRateAlgorithm,
+                                FairrateAlgorithm fairRateAlgorithm,
                                 AntiManipulationController antiManipulationController,
                                 TokenMintingController mintingController) {
         super(

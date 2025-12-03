@@ -3,7 +3,7 @@ package org.example.app.core.blockchain.consensus;
 import org.example.app.core.blockchain.transaction.TokenBankTransaction;
 import org.example.app.core.blockchain.transaction.Transaction;
 import org.example.app.core.banking.registration.BankRegistrationContract;
-import org.example.app.core.banking.tokenization.FairRateAlgorithm;
+import org.example.app.core.banking.tokenization.FairrateAlgorithm;
 import org.example.app.core.state.BlockchainState;
 import org.example.app.core.types.Address;
 import org.example.app.core.types.Hash;
@@ -43,7 +43,7 @@ public class TokenBankTransactionValidator {
     // Dependencies
     private final BlockchainState blockchainState;
     private final BankRegistrationContract bankRegistry;
-    private final FairRateAlgorithm fairRateAlgorithm;
+    private final FairrateAlgorithm fairRateAlgorithm;
     private final AntiManipulationValidator antiManipulationValidator;
     
     // Transaction tracking for velocity checks
@@ -118,7 +118,7 @@ public class TokenBankTransactionValidator {
      */
     public TokenBankTransactionValidator(BlockchainState blockchainState,
                                         BankRegistrationContract bankRegistry,
-                                        FairRateAlgorithm fairRateAlgorithm,
+                                        FairrateAlgorithm fairRateAlgorithm,
                                         AntiManipulationValidator antiManipulationValidator) {
         this.blockchainState = blockchainState;
         this.bankRegistry = bankRegistry;
