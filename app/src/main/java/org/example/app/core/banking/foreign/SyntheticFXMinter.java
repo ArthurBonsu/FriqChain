@@ -488,7 +488,7 @@ public class SyntheticFXMinter {
             stats.put("liquidationThreshold", LIQUIDATION_THRESHOLD);
             
             Map<String, BigInteger> mintedByCurrency = new HashMap<>();
-            Map<String, BigInteger> lockedByC urrency = new HashMap<>();
+            Map<String, BigInteger> lockedByCurrency = new HashMap<>();
             for (String currency : SUPPORTED_SYNTHETICS) {
                 mintedByurrency.put(currency, getTotalMinted(currency));
                 lockedByCurrency.put(currency, getTotalCollateralLocked(currency));

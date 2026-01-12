@@ -130,7 +130,7 @@ public class ReserveBackingCalculator {
         }
         public BigDecimal getTotalHaircutAmount() { return totalHaircutAmount; }
         public Date getCalculationDate() { return calculationDate; }
-        public boolean meetsMini minimum() { return meetsMinimum; }
+        public boolean meetsMiniminimum() { return meetsMinimum; }
         public String getCalculationDetails() { return calculationDetails; }
     }
     
