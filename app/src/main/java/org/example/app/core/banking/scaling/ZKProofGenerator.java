@@ -1,6 +1,10 @@
 package org.example.app.core.scaling;
 
-import org.example.app.core.blockchain.CryptoUtils;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicLong;
+
+// import org.example.app.core.blockchain.CryptoUtils; // TODO: Use HashUtils or crypto package
 
 import java.security.MessageDigest;
 import java.security.SecureRandom;

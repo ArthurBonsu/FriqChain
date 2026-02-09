@@ -15,10 +15,15 @@ import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.*;
+import java.util.ArrayList;
 import java.util.concurrent.*;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
 import java.util.logging.Logger;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -1260,7 +1265,7 @@ public class CrossShardBridge {
         Map<String, Object> regionalStats = new HashMap<>();
         for (AfricanRegion region : AfricanRegion.values()) {
             Map<String, Object> regionInfo = new HashMap<>();
-            List<Shard> regionShards = getShardsByRegion(region);
+            List<Shard> regionShards = new ArrayList<>(getShardsByRegion(region));
             
             long totalTxs = regionShards.stream().mapToLong(Shard::getTransactionCount).sum();
             long crossRegionTxs = regionShards.stream().mapToLong(Shard::getCrossRegionTransactions).sum();

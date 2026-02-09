@@ -490,7 +490,7 @@ public class SyntheticFXMinter {
             Map<String, BigInteger> mintedByCurrency = new HashMap<>();
             Map<String, BigInteger> lockedByCurrency = new HashMap<>();
             for (String currency : SUPPORTED_SYNTHETICS) {
-                mintedByurrency.put(currency, getTotalMinted(currency));
+                mintedByCurrency.put(currency, getTotalMinted(currency));
                 lockedByCurrency.put(currency, getTotalCollateralLocked(currency));
             }
             stats.put("totalMintedByCurrency", mintedByCurrency);

@@ -337,7 +337,7 @@ public class ShardCoordinator {
         int shardId = nextShardId.getAndIncrement();
         String shardName = region.name() + "_SHARD_" + shardId;
         
-        ShardState shardState = new ShardState(shardId, shardName);
+        ShardState shardState = new ShardState(shardId, region);
         shards.put(shardId, shardState);
         
         // Update region mappings
@@ -402,7 +402,9 @@ public class ShardCoordinator {
             .add(shardId);
         
         ShardState shard = shards.get(shardId);
-        shard.addValidator(validatorId);
+        AfricanRegion region = shardToRegion.get(shardId);
+        if (region == null) region = AfricanRegion.WEST_AFRICA; // Default
+        shard.addValidator(validatorId, region, 1.0); // Default stake weight
         
         logger.fine("Assigned validator " + validatorId + " to shard " + shardId);
     }

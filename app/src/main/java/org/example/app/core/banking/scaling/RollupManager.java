@@ -1,8 +1,10 @@
 package org.example.app.core.scaling;
 
-import org.example.app.core.blockchain.StateManager;
-import org.example.app.core.blockchain.ShardCoordinator;
-import org.example.app.core.blockchain.CryptoUtils;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.example.app.core.state.StateManager;
+// import org.example.app.core.blockchain.CryptoUtils; // TODO: Use HashUtils or crypto package
 import org.example.app.core.security.EncryptionService;
 
 import java.util.*;

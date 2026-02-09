@@ -1,5 +1,7 @@
 package org.example.app.core.scaling;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.example.app.core.pbftconsensus.PBFT;
 import org.example.app.core.pbftconsensus.PBFTMessage;
 import org.example.app.core.p2p.RobustP2PManager;

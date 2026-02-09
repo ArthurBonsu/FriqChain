@@ -1,5 +1,7 @@
 package org.example.app.core.banking.independence;
 
+import java.io.IOException;
+
 import org.example.app.core.block.Transaction;
 import org.example.app.core.types.Address;
 import org.example.app.core.p2p.Peer;
@@ -108,6 +110,33 @@ public class CommunityMeshNode {
             if (shardId >= 16 && shardId <= 19) return SOUTHERN_AFRICA;
             return WEST_AFRICA;
         }
+    }
+    
+    // Message types for mesh communication
+    public enum MessageType {
+        TRANSACTION,
+        BLOCK,
+        PEER_DISCOVERY,
+        STATE_SYNC,
+        CONSENSUS_VOTE,
+        ALERT,
+        HEARTBEAT
+    }
+    
+    // Message priority levels
+    public enum MessagePriority {
+        LOW(1),
+        NORMAL(2),
+        HIGH(3),
+        URGENT(4);
+        
+        private final int level;
+        
+        MessagePriority(int level) {
+            this.level = level;
+        }
+        
+        public int getLevel() { return level; }
     }
     
     // Node configuration

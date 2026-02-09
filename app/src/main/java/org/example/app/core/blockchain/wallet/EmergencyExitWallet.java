@@ -1,5 +1,7 @@
 package org.example.app.core.blockchain.wallet;
 
+import java.math.BigDecimal;
+
 import org.example.app.core.wallet.Wallet;
 import org.example.app.core.wallet.TransactionBuilder;
 import org.example.app.core.block.Transaction;

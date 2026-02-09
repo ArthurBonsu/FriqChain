@@ -1,5 +1,7 @@
 package org.example.app.core.banking.network;
 
+import java.util.stream.Collectors;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;

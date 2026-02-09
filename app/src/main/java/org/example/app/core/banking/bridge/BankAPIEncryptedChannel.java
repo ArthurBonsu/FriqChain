@@ -1,5 +1,7 @@
 package org.example.app.core.banking.bridge;
 
+import java.util.stream.Collectors;
+
 import org.example.app.core.crypto.Certificate;
 import org.example.app.core.crypto.CertificateAuthority;
 import org.example.app.core.crypto.PKIManager;

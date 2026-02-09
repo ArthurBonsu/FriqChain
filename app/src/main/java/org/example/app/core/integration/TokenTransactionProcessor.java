@@ -1,5 +1,9 @@
 package org.example.app.core.integration;
 
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.example.app.core.blockchain.transaction.TokenBankTransaction;
 import org.example.app.core.state.StateManager;
 import org.example.app.core.state.WorldState;

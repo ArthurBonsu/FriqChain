@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
  * - Government-resistance emergency protocol
  * - Community-verified feeds fallback
  */
-public class BankFeedOracle extends OracleReporter {
-    private static final Logger LOGGER = Logger.getLogger(BankFeedOracle.class.getName());
+public class CommodityPriceOracle extends OracleReporter {
+    private static final Logger LOGGER = Logger.getLogger(CommodityPriceOracle.class.getName());
     
     private static final int MIN_REGIONS_REQUIRED = 3;
     private static final BigDecimal AFRICAN_BANK_PRIORITY = new BigDecimal("3.0"); // 3x weight
@@ -99,8 +99,8 @@ public class BankFeedOracle extends OracleReporter {
         public void setWeight(BigDecimal weight) { this.weight = weight; }
     }
     
-    public BankFeedOracle(String reporterId, Address reporterAddress, BigDecimal minimumStake,
-                         AfricanRegion region, String country, NodeType nodeType, boolean isCommunityOwned) {
+    public CommodityPriceOracle(String reporterId, Address reporterAddress, BigDecimal minimumStake,
+                                AfricanRegion region, String country, NodeType nodeType, boolean isCommunityOwned) {
         super(reporterId, "BANK_FEED", reporterAddress, minimumStake, region, country, nodeType, isCommunityOwned);
         this.settlementFeeds = new ConcurrentHashMap<>();
         this.registeredBanks = new ConcurrentHashMap<>();

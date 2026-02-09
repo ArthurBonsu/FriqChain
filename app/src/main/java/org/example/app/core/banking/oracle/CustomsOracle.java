@@ -121,8 +121,10 @@ public class CustomsOracle extends OracleReporter {
     /**
      * Constructor
      */
-    public CustomsOracle(String reporterId, Address reporterAddress, BigDecimal minimumStake) {
-        super(reporterId, "CUSTOMS", reporterAddress, minimumStake);
+    public CustomsOracle(String reporterId, Address reporterAddress, BigDecimal minimumStake,
+                        AfricanSovereigntyTypes.AfricanRegion region, String country) {
+        super(reporterId, "CUSTOMS", reporterAddress, minimumStake, region, country,
+              AfricanSovereigntyTypes.NodeType.CUSTOMS_ORACLE, true);
         
         this.customsRecords = new ConcurrentHashMap<>();
         this.verificationHistory = new ConcurrentHashMap<>();
@@ -178,8 +180,8 @@ public class CustomsOracle extends OracleReporter {
         OracleData oracleData = new OracleData("CUSTOMS", customsData, reporterId, 
             confidence, signature);
         
-        oracleData.addMetadata("verified", true);
-        oracleData.addMetadata("signatures", record.getSignatures().size());
+        // oracleData.addMetadata("verified", true); // TODO: OracleData doesn't have addMetadata
+        // oracleData.addMetadata("signatures", record.getSignatures().size());
         
         LOGGER.info(String.format("Customs data fetched: %s (confidence: %.2f%%)",
             dataKey, confidence.multiply(new BigDecimal("100"))));
@@ -322,5 +324,14 @@ public class CustomsOracle extends OracleReporter {
         } catch (Exception e) {
             return new byte[32];
         }
+    }
+    
+    /**
+     * Creates hash of data
+     */
+    private byte[] createDataHash(Object data) throws Exception {
+        String dataStr = data.toString();
+        java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+        return digest.digest(dataStr.getBytes());
     }
 }

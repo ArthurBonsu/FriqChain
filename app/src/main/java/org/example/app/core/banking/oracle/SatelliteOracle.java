@@ -36,8 +36,10 @@ public class SatelliteOracle extends OracleReporter {
         public long getTimestamp() { return timestamp; }
     }
     
-    public SatelliteOracle(String reporterId, Address reporterAddress, BigDecimal minimumStake) {
-        super(reporterId, "SATELLITE", reporterAddress, minimumStake);
+    public SatelliteOracle(String reporterId, Address reporterAddress, BigDecimal minimumStake,
+                          AfricanSovereigntyTypes.AfricanRegion region, String country) {
+        super(reporterId, "SATELLITE", reporterAddress, minimumStake, region, country,
+              AfricanSovereigntyTypes.NodeType.SATELLITE_ORACLE, true);
         this.observations = new ConcurrentHashMap<>();
         LOGGER.info("SatelliteOracle initialized: " + reporterId);
     }

@@ -1,5 +1,7 @@
 package org.example.app.core.integration;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

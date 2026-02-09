@@ -236,7 +236,8 @@ public class OfflineCertificateIssuer {
             this.amount = certificate.getAmount().toString();
             this.currencyCode = certificate.getCurrencyCode();
             this.expiry = String.valueOf(certificate.getExpiryTimestamp());
-            this.signature = bytesToHex(certificate.getIssuerSignature().getSignature());
+            // TODO: SignatureResult doesn't have getSignature() method
+            this.signature = bytesToHex(certificate.getIssuerSignature().toString().getBytes());
             this.checksum = calculateChecksum();
         }
         

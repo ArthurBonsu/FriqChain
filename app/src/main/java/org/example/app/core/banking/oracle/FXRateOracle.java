@@ -243,12 +243,12 @@ public class FXRateOracle extends OracleReporter {
         OracleData oracleData = new OracleData("FX_RATE", finalRate, reporterId, 
             result.getConfidenceScore(), signature);
         
-        // Add metadata
-        oracleData.addMetadata("currencyPair", dataKey);
-        oracleData.addMetadata("sourcesUsed", result.getSourcesUsed());
-        oracleData.addMetadata("africanSources", result.getMetadata().get("africanSources"));
-        oracleData.addMetadata("regionsRepresented", result.getMetadata().get("regionsRepresented"));
-        oracleData.addMetadata("circuitBreakerStatus", circuitBreaker.isTripped() ? "TRIPPED" : "OK");
+        // Add metadata - TODO: OracleData doesn't have addMetadata method
+        // oracleData.addMetadata("currencyPair", dataKey);
+        // oracleData.addMetadata("sourcesUsed", result.getSourcesUsed());
+        // oracleData.addMetadata("africanSources", result.getMetadata().get("africanSources"));
+        // oracleData.addMetadata("regionsRepresented", result.getMetadata().get("regionsRepresented"));
+        // oracleData.addMetadata("circuitBreakerStatus", circuitBreaker.isTripped() ? "TRIPPED" : "OK");
         
         LOGGER.info(String.format("FX rate fetched: %s = %.6f (African: %d, Regions: %d)",
             dataKey, finalRate, result.getMetadata().get("africanSources"),
@@ -496,6 +496,15 @@ public class FXRateOracle extends OracleReporter {
         } catch (Exception e) {
             return new byte[32];
         }
+    }
+    
+    /**
+     * Creates hash of data
+     */
+    private byte[] createDataHash(Object data) throws Exception {
+        String dataStr = data.toString();
+        java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+        return digest.digest(dataStr.getBytes());
     }
     
     /**

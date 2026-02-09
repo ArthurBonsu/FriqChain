@@ -446,8 +446,8 @@ public class RelayChainProtocol {
     private PBFTMessage createPBFTMessage(RelayMessage message) {
         // In production, create proper PBFT message
         // For now, create a basic message structure
+        // TODO: PBFTMessage.MessageType enum doesn't exist yet
         return new PBFTMessage(
-            PBFTMessage.MessageType.PRE_PREPARE,
             message.getSequence(),
             message.getPayload()
         );

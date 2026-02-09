@@ -1,5 +1,8 @@
 package org.example.app.core.scaling;
 
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Logger;

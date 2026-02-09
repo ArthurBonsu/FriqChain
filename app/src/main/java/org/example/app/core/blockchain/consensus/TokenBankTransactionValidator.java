@@ -1,7 +1,7 @@
 package org.example.app.core.blockchain.consensus;
 
 import org.example.app.core.blockchain.transaction.TokenBankTransaction;
-import org.example.app.core.blockchain.transaction.Transaction;
+import org.example.app.core.block.Transaction;
 import org.example.app.core.banking.registration.BankRegistrationContract;
 import org.example.app.core.banking.tokenization.FairrateAlgorithm;
 import org.example.app.core.state.BlockchainState;

@@ -1,7 +1,7 @@
 package org.example.app.core.banking.compliance;
 
 import org.example.app.core.types.Address;
-import org.example.app.core.banking.security.SlashingEngine;
+// import org.example.app.core.banking.security.SlashingEngine; // TODO: Create or remove
 import java.util.*;
 import java.math.BigInteger;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,8 +31,7 @@ public class SanctionEnforcementEngine {
     
     private final Map<String, Sanction> sanctions; // Sanction ID -> Sanction
     private final Map<String, List<String>> targetSanctions; // Target address -> Sanction IDs
-    private final Map<String, SanctionHistory> sanctionHistory; // Target -> History
-    private final SlashingEngine slashingEngine;
+    private final Map<String, SanctionHistory> sanctionHistory; // Target -> History    // private final SlashingEngine slashingEngine; // TODO
     
     public enum SanctionLevel {
         WARNING,           // No action, reputational only
@@ -154,13 +153,10 @@ public class SanctionEnforcementEngine {
         public int getEscalationLevel() { return escalationLevel; }
         public void setEscalationLevel(int level) { this.escalationLevel = level; }
         public long getFirstSanctionTime() { return firstSanctionTime; }
-    }
-    
-    public SanctionEnforcementEngine(SlashingEngine slashingEngine) {
+    }    public SanctionEnforcementEngine(/* SlashingEngine slashingEngine */) {
         this.sanctions = new ConcurrentHashMap<>();
         this.targetSanctions = new ConcurrentHashMap<>();
-        this.sanctionHistory = new ConcurrentHashMap<>();
-        this.slashingEngine = slashingEngine;
+        this.sanctionHistory = new ConcurrentHashMap<>();        // this.slashingEngine = slashingEngine; // TODO
         LOGGER.info("SanctionEnforcementEngine initialized");
     }
     
@@ -379,8 +375,7 @@ public class SanctionEnforcementEngine {
         LOGGER.info("Reputation penalized by " + (penaltyAmount * 100) + "% for: " + sanction.getTargetEntity());
     }
     
-    private void executeCollateralSlash(Sanction sanction) {
-        if (slashingEngine != null && sanction.getFineAmount() != null) {
+    private void executeCollateralSlash(Sanction sanction) {        if (false /* slashingEngine != null */ && sanction.getFineAmount() != null) {
             // Delegate to slashing engine for stake slashing
             LOGGER.info("Collateral slashing executed for: " + sanction.getTargetEntity());
         }

@@ -1,5 +1,7 @@
 package org.example.app.core.scaling;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;

@@ -1,6 +1,7 @@
 package org.example.app.core.banking.oracle;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -285,7 +286,7 @@ public class AfricanSovereigntyTypes {
             }
             
             for (Map.Entry<AfricanRegion, BigDecimal> entry : regionalValues.entrySet()) {
-                BigDecimal percentage = entry.getValue().divide(total, 4, BigDecimal.ROUND_HALF_UP);
+                BigDecimal percentage = entry.getValue().divide(total, 4, RoundingMode.HALF_UP);
                 
                 if (percentage.compareTo(MAX_REGION_PERCENTAGE) > 0) {
                     LOGGER.warning(String.format("Region %s exceeds 33%% limit: %.2f%%",
@@ -309,7 +310,7 @@ public class AfricanSovereigntyTypes {
             }
             
             for (Map.Entry<String, BigDecimal> entry : countryValues.entrySet()) {
-                BigDecimal percentage = entry.getValue().divide(total, 4, BigDecimal.ROUND_HALF_UP);
+                BigDecimal percentage = entry.getValue().divide(total, 4, RoundingMode.HALF_UP);
                 
                 if (percentage.compareTo(MAX_COUNTRY_PERCENTAGE) > 0) {
                     LOGGER.warning(String.format("Country %s exceeds 33%% limit: %.2f%%",
@@ -347,9 +348,9 @@ public class AfricanSovereigntyTypes {
             long cloudCount = nodeTypeCounts.getOrDefault(NodeType.CLOUD, 0L);
             
             BigDecimal communityPercentage = new BigDecimal(communityCount)
-                .divide(new BigDecimal(total), 4, BigDecimal.ROUND_HALF_UP);
+                .divide(new BigDecimal(total), 4, RoundingMode.HALF_UP);
             BigDecimal cloudPercentage = new BigDecimal(cloudCount)
-                .divide(new BigDecimal(total), 4, BigDecimal.ROUND_HALF_UP);
+                .divide(new BigDecimal(total), 4, RoundingMode.HALF_UP);
             
             // Community should be 50%+ (warning if below, not error)
             if (communityPercentage.compareTo(new BigDecimal("0.50")) < 0) {
@@ -396,7 +397,7 @@ public class AfricanSovereigntyTypes {
             }
             
             BigDecimal deviation = newValue.subtract(previousValue).abs()
-                .divide(previousValue, 4, BigDecimal.ROUND_HALF_UP);
+                .divide(previousValue, 4, RoundingMode.HALF_UP);
             
             if (deviation.compareTo(MAX_DEVIATION_THRESHOLD) > 0) {
                 recordDeviation(dataKey, deviation, newValue, previousValue);

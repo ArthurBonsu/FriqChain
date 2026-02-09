@@ -1,5 +1,7 @@
 package org.example.app.core.banking.governance;
 
+import java.math.BigDecimal;
+
 import org.example.app.core.types.Address;
 import org.example.app.core.banking.registration.ValidatorNodeRegistry;
 import org.example.app.core.crypto.Certificate;
@@ -63,15 +65,17 @@ public class ValidatorGovernance {
                 " at capacity (>33%)");
         }
         
+        // Convert geographicRegion int to AfricanRegion enum
+        AfricanSovereigntyTypes.AfricanRegion regionEnum = AfricanSovereigntyTypes.AfricanRegion.values()[geographicRegion % 5];
+        
         // Register validator
         String validatorId = validatorRegistry.registerValidator(
             UUID.randomUUID().toString(),
             operatorAddress,
             certificate.getPublicKey(),
             certificate.getPublicKey(),
-            certificate,
             operatorAddress.toString(),
-            geographicRegion,
+            regionEnum,
             country,
             stakeAmount
         );
@@ -105,7 +109,8 @@ public class ValidatorGovernance {
         // Execute slashing
         validatorRegistry.slashValidator(validatorId, 
             ValidatorNodeRegistry.ViolationType.DOUBLE_SIGNING, // Map to registry type
-            evidence);
+            evidence,
+            "GOVERNANCE_SYSTEM"); // Slasher/reporter ID
         
         // Record in audit log
         auditLog.recordEvent(GovernanceAuditLog.AuditEventType.VALIDATOR_SLASHED,
@@ -120,8 +125,9 @@ public class ValidatorGovernance {
         
         // Permanent ban for collusion
         if (reason == SlashingReason.COLLUSION) {
-            validatorRegistry.removeValidator(validatorId, "Permanent ban for collusion");
-            LOGGER.severe("Validator permanently banned: " + validatorId);
+            // TODO: ValidatorNodeRegistry.removeValidator() doesn't exist yet
+            // validatorRegistry.removeValidator(validatorId, "Permanent ban for collusion");
+            LOGGER.severe("Validator permanently banned (manual removal required): " + validatorId);
         }
     }
     

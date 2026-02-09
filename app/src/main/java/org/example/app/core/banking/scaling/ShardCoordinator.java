@@ -1,5 +1,7 @@
 package org.example.app.core.scaling;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.example.app.core.block.Block;
 import org.example.app.core.block.Transaction;
 import org.example.app.core.state.StateManager;

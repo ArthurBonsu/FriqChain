@@ -1,5 +1,7 @@
 package org.example.app.core.banking.network;
 
+import java.util.stream.Collectors;
+
 import org.example.app.core.blockchain.block.ShardState;
 import org.example.app.core.blockchain.transaction.CrossShardTransaction;
 import org.example.app.core.types.Address;
@@ -117,14 +119,14 @@ public class LoadBalancer {
      * Initializes load tracking for all shards
      */
     public void initializeShardLoads() {
-        Map<Integer, ShardState> shards = shardCoordinator.getAllShards();
+        int shardCount = shardCoordinator.getShardCount();
         
-        for (int shardId : shards.keySet()) {
+        for (int shardId = 0; shardId < shardCount; shardId++) {
             shardLoads.put(shardId, new ShardLoad(shardId));
             shardTransactionCounts.put(shardId, new AtomicLong(0));
         }
         
-        logger.info("Initialized load tracking for " + shards.size() + " shards");
+        logger.info("Initialized load tracking for " + shardCount + " shards");
     }
     
     /**
