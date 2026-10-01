@@ -116,6 +116,7 @@ public class ContractWallet extends Wallet {
         Transaction tx = new Transaction(bytecode);
         tx.setGasLimit(3000000); // High gas limit for contract deployment
         tx.setValue(0L); // No ETH sent with deployment - using Long parameter
+        tx.setContractCreation(true);
         
         return tx;
     }
@@ -128,6 +129,7 @@ public class ContractWallet extends Wallet {
         tx.setRecipient(contractAddress);
         tx.setGasLimit(200000); // Standard gas limit for contract calls
         tx.setValue(0L); // No ETH sent with call - using Long parameter
+        tx.setContractCall(true);
         
         return tx;
     }
@@ -136,13 +138,8 @@ public class ContractWallet extends Wallet {
      * Sign a transaction with the wallet's private key
      */
     private void signTransaction(Transaction tx) {
-        // In a real implementation, we would use the wallet's keypair to sign the transaction
-        // Since we can't set the nonce directly, just increment our internal nonce
-        incrementNonce();
-        
-        // In a real implementation, we would now sign the transaction with our private key
-        // For now, we'll just leave it as is, since your Transaction class doesn't appear
-        // to have a method to set the signature or sign the transaction
+        incrementNonce(); // drives generateContractAddress()
+        sign(tx);         // sets sender and wallet nonce, attaches a real secp256k1 signature
     }
     
     /**

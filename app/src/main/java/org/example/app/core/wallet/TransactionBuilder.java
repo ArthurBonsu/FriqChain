@@ -3,9 +3,11 @@ package org.example.app.core.wallet;
 import java.math.BigInteger;
 import java.security.PrivateKey;
 import org.example.app.core.block.Transaction;
-import org.example.app.core.crypto.Keypair;
-import org.example.app.core.crypto.Keypair.SignatureResult;
 
+/**
+ * Fluent builder for {@link Transaction}. When a private key is supplied the transaction is signed
+ * with a real secp256k1 ECDSA signature; the key must belong to the {@code from} address.
+ */
 public class TransactionBuilder {
     private String from;
     private String to;
@@ -14,6 +16,7 @@ public class TransactionBuilder {
     private BigInteger gasLimit;
     private byte[] data;
     private long nonce;
+    private long chainId = Transaction.DEFAULT_CHAIN_ID;
     private PrivateKey privateKey;
 
     public TransactionBuilder() {
@@ -58,6 +61,11 @@ public class TransactionBuilder {
         return this;
     }
 
+    public TransactionBuilder chainId(long chainId) {
+        this.chainId = chainId;
+        return this;
+    }
+
     public TransactionBuilder privateKey(PrivateKey privateKey) {
         this.privateKey = privateKey;
         return this;
@@ -66,78 +74,23 @@ public class TransactionBuilder {
     public Transaction build() {
         validate();
 
-        // Create transaction with data
         Transaction tx = new Transaction(data);
-
-        // Use reflection to set private fields
-        setSenderInTransaction(tx, from);
-        setRecipientInTransaction(tx, to);
-        setValueInTransaction(tx, value.longValue());
+        tx.setSender(from);
+        tx.setRecipient(to);
+        try {
+            tx.setValue(value.longValueExact());
+            tx.setGasLimit(gasLimit.intValueExact());
+        } catch (ArithmeticException e) {
+            throw new IllegalStateException("Value or gas limit exceeds the supported range", e);
+        }
         tx.setGasPrice(gasPrice);
-        setGasLimitInTransaction(tx, gasLimit.intValue());
+        tx.setNonce(nonce);
+        tx.setChainId(chainId);
 
-        // Sign the transaction if private key is provided
         if (privateKey != null) {
-            SignatureResult signature = createSignature(tx);
-            tx.setSignature(signature);
+            tx.sign(privateKey);
         }
-
         return tx;
-    }
-
-    // Use reflection to set private fields
-    private void setSenderInTransaction(Transaction tx, String sender) {
-        try {
-            java.lang.reflect.Field field = Transaction.class.getDeclaredField("sender");
-            field.setAccessible(true);
-            field.set(tx, sender);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set sender", e);
-        }
-    }
-
-    private void setRecipientInTransaction(Transaction tx, String recipient) {
-        try {
-            java.lang.reflect.Field field = Transaction.class.getDeclaredField("recipient");
-            field.setAccessible(true);
-            field.set(tx, recipient);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set recipient", e);
-        }
-    }
-
-    private void setValueInTransaction(Transaction tx, Long value) {
-        try {
-            java.lang.reflect.Field field = Transaction.class.getDeclaredField("value");
-            field.setAccessible(true);
-            field.set(tx, value);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set value", e);
-        }
-    }
-
-    private void setGasLimitInTransaction(Transaction tx, int gasLimit) {
-        try {
-            java.lang.reflect.Field field = Transaction.class.getDeclaredField("gasLimit");
-            field.setAccessible(true);
-            field.set(tx, gasLimit);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set gasLimit", e);
-        }
-    }
-
-    private SignatureResult createSignature(Transaction tx) {
-        try {
-            byte[] messageToSign = tx.toBytes();
-            // Placeholder for signature creation
-            // If SignatureResult requires two BigInteger parameters
-            return new SignatureResult(
-                    BigInteger.ONE,  // Placeholder for r value
-                    BigInteger.ONE   // Placeholder for s value
-            );
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to create signature", e);
-        }
     }
 
     private void validate() {
@@ -150,15 +103,21 @@ public class TransactionBuilder {
         if (value == null) {
             throw new IllegalStateException("Value cannot be null");
         }
+        if (value.signum() < 0) {
+            throw new IllegalStateException("Value cannot be negative");
+        }
         if (gasPrice == null || gasPrice.compareTo(BigInteger.ZERO) <= 0) {
             throw new IllegalStateException("Invalid gas price");
         }
         if (gasLimit == null || gasLimit.compareTo(BigInteger.ZERO) <= 0) {
             throw new IllegalStateException("Invalid gas limit");
         }
+        if (nonce < 0) {
+            throw new IllegalStateException("Nonce cannot be negative");
+        }
     }
 
-    // Optional: Add a method to reset the builder for reuse
+    /** Resets the builder for reuse. */
     public TransactionBuilder reset() {
         this.from = null;
         this.to = null;
@@ -167,6 +126,7 @@ public class TransactionBuilder {
         this.gasLimit = BigInteger.valueOf(21000);
         this.data = new byte[0];
         this.nonce = 0;
+        this.chainId = Transaction.DEFAULT_CHAIN_ID;
         this.privateKey = null;
         return this;
     }

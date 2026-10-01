@@ -61,6 +61,9 @@ public class Address {
 
     // Utility method to create an Address from a hexadecimal string
     public static Address fromHexString(String hex) {
+        if (hex != null && (hex.startsWith("0x") || hex.startsWith("0X"))) {
+            hex = hex.substring(2); // accept the canonical 0x-prefixed form used by wallets
+        }
         if (hex == null || hex.length() != ADDRESS_LENGTH * 2) {
             throw new IllegalArgumentException(
                     "Invalid hexadecimal string: expected " + (ADDRESS_LENGTH * 2) + " characters, but got " + (hex == null ? "null" : hex.length())

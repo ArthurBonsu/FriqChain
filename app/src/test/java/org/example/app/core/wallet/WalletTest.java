@@ -1,354 +1,306 @@
 package org.example.app.core.wallet;
 
 import org.example.app.core.block.Transaction;
-import org.junit.jupiter.api.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.example.app.core.crypto.Secp256k1;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.MessageDigest;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Test class for wallet functionality in the blockchain
+ * Wallet, key and keystore behaviour. Every wallet test runs against its own temporary directory,
+ * so nothing is written to the user's real wallet folder.
  */
 class WalletTest {
-    private static final Logger logger = LoggerFactory.getLogger(WalletTest.class);
-    
-    private static final String TEST_WALLET_DIR = "test-wallets";
-    private static final String TEST_WALLET_PASSWORD = "testPassword123";
+    private static final String PASSWORD = "testPassword123";
+    private static final String RECIPIENT = "0x1234567890123456789012345678901234567890";
+    // A low scrypt cost keeps the suite fast; production uses the default cost.
+    private static final int TEST_SCRYPT_N = 1 << 10;
+
+    private Path directory;
+    private WalletStorage storage;
     private Wallet wallet;
-    private WalletStorage walletStorage;
-    private String walletId;
-    
+
     @BeforeEach
     void setUp() throws Exception {
-        logger.info("===== INITIALIZING WALLET TEST =====");
-        
-        // Create test directory if it doesn't exist
-        Files.createDirectories(Paths.get(TEST_WALLET_DIR));
-        
-        // Create a unique wallet ID for each test
-        walletId = "test-wallet-" + UUID.randomUUID().toString().substring(0, 8);
-        
-        // Initialize wallet storage
-        walletStorage = new WalletStorage(TEST_WALLET_DIR);
-        
-        // Create a new wallet
+        directory = Files.createTempDirectory("tinc-wallet-test");
+        storage = new WalletStorage(directory, TEST_SCRYPT_N);
         wallet = new Wallet();
-        
-        logger.info("Created test wallet with address: {}", wallet.getAddress());
     }
-    
+
     @AfterEach
-    void tearDown() {
-        logger.info("===== CLEANING UP WALLET TEST =====");
-        try {
-            // Delete test wallet files
-            if (walletStorage != null && walletId != null) {
-                try {
-                    walletStorage.deleteWallet(walletId);
-                    logger.info("Deleted test wallet: {}", walletId);
-                } catch (Exception e) {
-                    // Ignore if wallet file doesn't exist
-                    logger.debug("Error deleting wallet: {}", e.getMessage());
-                }
+    void tearDown() throws IOException {
+        if (directory != null && Files.exists(directory)) {
+            try (Stream<Path> paths = Files.walk(directory)) {
+                paths.sorted(Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
             }
-            
-            // Clean up additional test files
-            try {
-                for (int i = 0; i < 3; i++) {
-                    walletStorage.deleteWallet(walletId + "-" + i);
-                } 
-            } catch (Exception e) {
-                // Ignore errors during cleanup
-            }
-            
-            // Optionally clean up the directory if empty
-            File dir = new File(TEST_WALLET_DIR);
-            if (dir.exists() && dir.isDirectory() && dir.list().length == 0) {
-                dir.delete();
-            }
-        } catch (Exception e) {
-            logger.error("Error cleaning up wallet test", e);
         }
     }
-    
+
+    // ------------------------------------------------------------------ keys and addresses
+
     @Test
-    void testWalletCreation() throws NoSuchAlgorithmException {
-        logger.info("===== TESTING WALLET CREATION =====");
-        
-        // Verify wallet has a valid address
+    void testWalletCreation() {
         String address = wallet.getAddress();
-        assertNotNull(address, "Wallet should have a valid address");
-        assertTrue(address.length() > 0, "Address should not be empty");
-        
-        // Verify initial balance
+        assertNotNull(address, "Wallet should have an address");
+        assertTrue(address.matches("0x[0-9a-f]{40}"), "Address must be 0x + 40 lowercase hex characters: " + address);
         assertEquals(0, wallet.getBalance(), "New wallet should have zero balance");
-        
-        // Verify transactions map is empty
-        HashMap<String, Transaction> transactions = wallet.getTransactions();
-        assertTrue(transactions.isEmpty(), "New wallet should have no transactions");
-        
-        logger.info("Successfully created wallet with address: {}", address);
+        assertTrue(wallet.getTransactions().isEmpty(), "New wallet should have no transactions");
     }
-    
+
+    @Test
+    void testEveryWalletHasAUniqueAddress() throws Exception {
+        Set<String> addresses = new HashSet<>();
+        for (int i = 0; i < 25; i++) {
+            addresses.add(new Wallet().getAddress());
+        }
+        assertEquals(25, addresses.size(), "Distinct wallets must never share an address");
+    }
+
+    @Test
+    void testAddressIsDerivedFromThePublicKey() {
+        byte[] hash = Secp256k1.keccak256(wallet.getPublicKeyBytes());
+        String expected = "0x" + Secp256k1.toHex(java.util.Arrays.copyOfRange(hash, 12, 32));
+        assertEquals(expected, wallet.getAddress());
+    }
+
     @Test
     void testKeyUtilsAddressGeneration() throws Exception {
-        logger.info("===== TESTING KEY UTILS ADDRESS GENERATION =====");
-        
-        // Generate a key pair
         KeyPair keyPair = KeyUtils.generateKeyPair();
-        assertNotNull(keyPair, "KeyPair should be generated successfully");
-        
-        // Get the address from public key
-        PublicKey publicKey = keyPair.getPublic();
-        String address = KeyUtils.getAddress(publicKey);
-        
-        assertNotNull(address, "Address should not be null");
-        assertTrue(address.startsWith("0x"), "Address should start with 0x");
-        
-        // The implementation returns a placeholder, so just verify it's not empty
-        assertTrue(address.length() > 2, "Address should have characters after 0x");
-        
-        logger.info("Successfully generated address: {}", address);
+        String address = KeyUtils.getAddress(keyPair.getPublic());
+        assertTrue(address.matches("0x[0-9a-f]{40}"), "Address format");
+        assertNotEquals("0x" + "0".repeat(40), address, "Address must not be the zero placeholder");
+        assertNotEquals(address, KeyUtils.getAddress(KeyUtils.generateKeyPair().getPublic()));
     }
-    
+
     @Test
     void testDigitalSignature() throws Exception {
-        logger.info("===== TESTING DIGITAL SIGNATURE =====");
-        
-        // Generate key pair
         KeyPair keyPair = KeyUtils.generateKeyPair();
-        PrivateKey privateKey = keyPair.getPrivate();
-        PublicKey publicKey = keyPair.getPublic();
-        
-        // Create data to sign - USE EXACTLY 32 BYTES to avoid hash calculation error
-        byte[] data = new byte[32];
-        System.arraycopy("Test message for signing".getBytes(), 0, data, 0, 
-                        Math.min("Test message for signing".getBytes().length, 32));
-        
-        // Sign data
-        byte[] signature = KeyUtils.sign(data, privateKey);
-        assertNotNull(signature, "Signature should not be null");
-        
-        // Verify signature
-        boolean isValid = KeyUtils.verifySignature(data, signature, publicKey);
-        assertTrue(isValid, "Signature should be valid");
-        
-        logger.info("Successfully tested digital signature");
+        byte[] message = "Test message for signing".getBytes(StandardCharsets.UTF_8);
+
+        byte[] signature = KeyUtils.sign(message, keyPair.getPrivate());
+        assertTrue(KeyUtils.verifySignature(message, signature, keyPair.getPublic()), "Signature should be valid");
+
+        byte[] other = "Another message".getBytes(StandardCharsets.UTF_8);
+        assertFalse(KeyUtils.verifySignature(other, signature, keyPair.getPublic()), "Signature must not verify for a different message");
+        assertFalse(KeyUtils.verifySignature(message, signature, KeyUtils.generateKeyPair().getPublic()), "Signature must not verify for a different key");
+        assertFalse(KeyUtils.verifySignature(message, new byte[]{1, 2, 3}, keyPair.getPublic()), "Garbage signature must be rejected, not throw");
     }
-    
+
+    // ------------------------------------------------------------------ transaction building
+
     @Test
     void testTransactionBuilderValidation() {
-        logger.info("===== TESTING TRANSACTION BUILDER VALIDATION =====");
-        
-        // Create an incomplete transaction builder
         TransactionBuilder builder = new TransactionBuilder();
-        
-        // Missing 'from' should throw exception
+
         Exception fromException = assertThrows(IllegalStateException.class, builder::build);
         assertEquals("From address is required", fromException.getMessage());
-        
-        // Add from but missing 'to'
+
         builder.from("0x1111111111111111111111111111111111111111");
         Exception toException = assertThrows(IllegalStateException.class, builder::build);
         assertEquals("To address is required", toException.getMessage());
-        
-        // Complete the builder
+
         builder.to("0x2222222222222222222222222222222222222222");
-        
-        // Now it should build without exceptions
-        Transaction tx = builder.build();
-        assertNotNull(tx, "Should build transaction successfully");
-        
-        logger.info("Successfully tested transaction builder validation");
+        assertNotNull(builder.build(), "A complete builder should build");
+
+        assertThrows(IllegalStateException.class, () -> builder.value(BigInteger.valueOf(-1)).build(), "Negative value");
+        assertThrows(IllegalStateException.class,
+                () -> builder.value(BigInteger.ONE.shiftLeft(80)).build(), "Value beyond long range must not be truncated");
     }
-    
+
     @Test
     void testInsufficientFunds() {
-        logger.info("===== TESTING INSUFFICIENT FUNDS =====");
-        
-        // Initial wallet balance should be zero
-        assertEquals(0, wallet.getBalance(), "Initial balance should be zero");
-        
-        // Attempt to create transaction with insufficient funds
-        String recipientAddress = "0x1234567890123456789012345678901234567890";
-        long amount = 100;
-        long gasPrice = 10;
-        
-        // Should throw IllegalStateException
-        Exception exception = assertThrows(IllegalStateException.class, () -> {
-            wallet.createTransaction(recipientAddress, amount, gasPrice);
-        });
-        
-        // Verify exception message
-        String expectedMessage = "Insufficient funds";
-        String actualMessage = exception.getMessage();
-        assertEquals(expectedMessage, actualMessage, "Exception message should be 'Insufficient funds'");
-        
-        logger.info("Successfully tested insufficient funds scenario");
+        assertEquals(0, wallet.getBalance());
+        Exception exception = assertThrows(IllegalStateException.class,
+                () -> wallet.createTransaction(RECIPIENT, 100, 10));
+        assertEquals("Insufficient funds", exception.getMessage());
+        assertEquals(0, wallet.getNextNonce(), "A failed transaction must not consume a nonce");
+        assertTrue(wallet.getTransactions().isEmpty());
     }
-    
+
     @Test
     void testTransactionBuilding() {
-        logger.info("===== TESTING TRANSACTION BUILDING =====");
-        
-        // Update balance to allow transaction creation
         wallet.updateBalance(1000);
-        
-        // Create a transaction
-        String recipientAddress = "0x1234567890123456789012345678901234567890";
-        long amount = 100;
-        long gasPrice = 10;
-        
-        try {
-            // Create transaction - should succeed now that we have balance
-            Transaction transaction = wallet.createTransaction(recipientAddress, amount, gasPrice);
-            
-            // Just verify transaction was created, not specific properties
-            assertNotNull(transaction, "Transaction should be created successfully");
-            
-            // Transaction should be stored in wallet
-            HashMap<String, Transaction> transactions = wallet.getTransactions();
-            assertEquals(1, transactions.size(), "Wallet should have one transaction");
-            
-            logger.info("Successfully created transaction with amount: {}", amount);
-            
-        } catch (Exception e) {
-            // If the original error persists, catch it and provide alternative verification
-            logger.warn("Transaction creation failed with hash error: {}", e.getMessage());
-            
-            // Verify wallet state is still consistent
-            assertEquals(1000, wallet.getBalance(), "Wallet balance should remain unchanged on error");
-            
-            // Create a simpler transaction using TransactionBuilder - FIX: Convert long to BigInteger
-            TransactionBuilder builder = new TransactionBuilder()
-                    .from(wallet.getAddress())
-                    .to(recipientAddress)
-                    .value(BigInteger.valueOf(amount)); // Fixed: Convert long to BigInteger
-            
-            Transaction altTransaction = builder.build();
-            assertNotNull(altTransaction, "Alternative transaction creation should work");
-            
-            logger.info("Used alternative transaction creation method successfully");
-        }
+        Transaction tx = wallet.createTransaction(RECIPIENT, 100, 10);
+
+        assertEquals(wallet.getAddress(), tx.getSender());
+        assertEquals(RECIPIENT, tx.getRecipient());
+        assertEquals(100L, tx.getValue().longValue());
+        assertTrue(tx.isValid(), "Wallet transactions must be structurally valid");
+        assertTrue(tx.verifySignature(), "Wallet transactions must carry a valid signature");
+        assertEquals(1, wallet.getTransactions().size());
+        assertSame(tx, wallet.getTransaction(tx.getHash()));
     }
-    
-    @Test
-    void testWalletStorageListWallets() throws Exception {
-        logger.info("===== TESTING WALLET STORAGE LIST WALLETS =====");
-        
-        // Create some simple dummy data to avoid encryption issues
-        for (int i = 0; i < 3; i++) {
-            try {
-                // Create a directory instead of an actual wallet file
-                Path walletPath = Paths.get(TEST_WALLET_DIR, walletId + "-" + i + ".json");
-                Files.write(walletPath, "{}".getBytes());
-            } catch (IOException e) {
-                logger.error("Error creating test wallet file", e);
-            }
-        }
-        
-        // List all wallets
-        String[] wallets = walletStorage.listWallets();
-        
-        // Should have at least 3 wallets
-        assertTrue(wallets.length >= 3, "Should list at least 3 wallets");
-        
-        logger.info("Successfully listed wallets: {}", String.join(", ", wallets));
-    }
-    
+
     @Test
     void testNonceIncrement() {
-        logger.info("===== TESTING NONCE INCREMENT =====");
-        
-        // Add balance
-        wallet.updateBalance(10000);
-        
-        // Create multiple transactions with error handling
-        String recipient = "0x1234567890123456789012345678901234567890";
-        int successfulTransactions = 0;
-        
+        wallet.updateBalance(10_000);
         for (int i = 0; i < 3; i++) {
-            try {
-                wallet.createTransaction(recipient, 100 + (i * 100), 10);
-                successfulTransactions++;
-                logger.info("Created transaction {}", i + 1);
-            } catch (Exception e) {
-                logger.warn("Transaction {} failed: {}", i + 1, e.getMessage());
-                // Continue with next transaction
-            }
+            Transaction tx = wallet.createTransaction(RECIPIENT, 100 + i * 100L, 10);
+            assertEquals(i, tx.getNonce(), "Nonces must be sequential starting at 0");
         }
-        
-        // Verify we have some transactions in the wallet
-        HashMap<String, Transaction> transactions = wallet.getTransactions();
-        assertTrue(transactions.size() >= 1, "Wallet should have at least one transaction");
-        assertEquals(successfulTransactions, transactions.size(), 
-                    "Transaction count should match successful creations");
-        
-        logger.info("Successfully tested transaction creation: {}/{} successful", 
-                   successfulTransactions, 3);
+        assertEquals(3, wallet.getTransactions().size(), "Every transaction must be recorded");
+        assertEquals(3, wallet.getNextNonce());
     }
-    
+
     @Test
-    void testHashCalculationWorkaround() {
-        logger.info("===== TESTING HASH CALCULATION WORKAROUND =====");
-        
-        try {
-            // Test hash calculation with proper 32-byte input
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            
-            // Create test data exactly 32 bytes
-            byte[] testData = new byte[32];
-            System.arraycopy("test transaction data".getBytes(), 0, testData, 0, 
-                           Math.min("test transaction data".getBytes().length, 32));
-            
-            // Calculate hash
-            byte[] hash = digest.digest(testData);
-            assertNotNull(hash, "Hash should not be null");
-            assertEquals(32, hash.length, "Hash should be 32 bytes");
-            
-            // Convert to hex string
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                hexString.append(String.format("%02x", b));
-            }
-            
-            String hashString = hexString.toString();
-            assertEquals(64, hashString.length(), "Hex hash should be 64 characters");
-            
-            logger.info("Successfully calculated hash: {}", hashString.substring(0, 16) + "...");
-            
-        } catch (Exception e) {
-            fail("Hash calculation test failed: " + e.getMessage());
-        }
+    void testIdenticalTransfersGetDistinctHashes() {
+        wallet.updateBalance(10_000);
+        Transaction first = wallet.createTransaction(RECIPIENT, 100, 10);
+        Transaction second = wallet.createTransaction(RECIPIENT, 100, 10);
+        assertNotEquals(first.getHash(), second.getHash(), "The nonce must make identical transfers distinct");
     }
-    
-    // Skip wallet storage encryption tests since they require fixes to the implementation
+
     @Test
-    @Disabled("WalletStorage encryption needs GCMParameterSpec")
+    void testTokenTransferEncodingIsStrict() {
+        wallet.updateBalance(10_000);
+        Wallet other = newWallet();
+
+        Transaction tx = wallet.createTokenTransferTransaction("0xabc0000000000000000000000000000000000001", other.getAddress(), 50_000L, 10);
+        byte[] data = tx.getData();
+        assertEquals(68, data.length);
+        assertArrayEquals(new byte[]{(byte) 0xa9, 0x05, (byte) 0x9c, (byte) 0xbb}, java.util.Arrays.copyOfRange(data, 0, 4));
+        assertArrayEquals(Secp256k1.fromHex(other.getAddress()), java.util.Arrays.copyOfRange(data, 16, 36));
+        assertEquals(BigInteger.valueOf(50_000L), new BigInteger(1, java.util.Arrays.copyOfRange(data, 36, 68)));
+        assertTrue(tx.verifySignature(), "Token transfers must be signed");
+
+        // Malformed recipients are refused instead of silently becoming the zero address.
+        assertThrows(IllegalArgumentException.class, () -> wallet.createTokenTransferTransaction("0xabc", "0x1234", 1L, 10));
+        assertThrows(IllegalArgumentException.class, () -> wallet.createTokenTransferTransaction("0xabc", "not-hex", 1L, 10));
+        assertThrows(IllegalArgumentException.class, () -> wallet.createTokenTransferTransaction("0xabc", RECIPIENT, -1L, 10));
+
+        // Full 256-bit amounts are encoded without truncation.
+        BigInteger huge = BigInteger.ONE.shiftLeft(200).add(BigInteger.valueOf(7));
+        byte[] big = Wallet.encodeTokenTransfer(RECIPIENT, huge);
+        assertEquals(huge, new BigInteger(1, java.util.Arrays.copyOfRange(big, 36, 68)));
+        assertThrows(IllegalArgumentException.class, () -> Wallet.encodeTokenTransfer(RECIPIENT, BigInteger.ONE.shiftLeft(256)));
+    }
+
+    @Test
+    void testContractTransactionsAreSignedAndConsumeExactlyOneNonce() {
+        wallet.updateBalance(10_000);
+        Transaction tx = wallet.createContractTransaction("0xabc0000000000000000000000000000000000001", new byte[]{1, 2, 3}, 10);
+        assertTrue(tx.verifySignature(), "Contract calls must be signed");
+        assertEquals(1, wallet.getNextNonce());
+        assertEquals(1, wallet.getTransactions().size());
+    }
+
+    // ------------------------------------------------------------------ keystore
+
+    @Test
     void testWalletStorageSaveAndLoad() throws Exception {
-        // This test is disabled until WalletStorage.encrypt and decrypt methods
-        // are updated to use GCMParameterSpec
+        wallet.updateBalance(500);
+        wallet.createTransaction(RECIPIENT, 100, 10); // nonce is now 1
+        wallet.save(storage, "alice", PASSWORD);
+
+        assertTrue(storage.walletExists("alice"));
+        Wallet restored = Wallet.load(storage, "alice", PASSWORD);
+
+        assertEquals(wallet.getAddress(), restored.getAddress(), "Restored wallet must have the same address");
+        assertEquals(1, restored.getNextNonce(), "Nonce must be restored");
+        restored.updateBalance(500);
+        Transaction tx = restored.createTransaction(RECIPIENT, 100, 10);
+        assertTrue(tx.verifySignature(), "Restored wallet must be able to sign");
+        assertEquals(wallet.getAddress(), tx.getSender());
     }
-    
+
     @Test
-    @Disabled("WalletStorage encryption needs GCMParameterSpec")
-    void testWalletStorageSecurity() {
-        // This test is disabled until WalletStorage.encrypt and decrypt methods
-        // are updated to use GCMParameterSpec
+    void testWalletStorageSecurity() throws Exception {
+        wallet.save(storage, "secure", PASSWORD);
+
+        // Wrong password: rejected, never returns key material.
+        Exception wrong = assertThrows(Exception.class, () -> Wallet.load(storage, "secure", "wrong-password"));
+        assertTrue(wrong.getMessage().contains("Invalid password"), "Wrong password must be reported: " + wrong.getMessage());
+
+        // The private key must not appear in the file, in hex or as raw bytes.
+        Path file = directory.resolve("secure.wallet");
+        String content = Files.readString(file, StandardCharsets.ISO_8859_1);
+        String keyHex = Secp256k1.toHex(Secp256k1.toUnsigned32(Secp256k1.privateScalar(privateKeyOf(wallet))));
+        assertFalse(content.contains(keyHex), "Private key must not be stored in the clear");
+        assertFalse(content.toLowerCase().contains("password_hash"), "No weak password hash may be stored");
+
+        // Tampering with the ciphertext or the stored address is detected.
+        String original = Files.readString(file);
+        String ciphertextLine = original.lines().filter(l -> l.startsWith("ciphertext=")).findFirst().orElseThrow();
+        String flipped = ciphertextLine.substring(0, ciphertextLine.length() - 1)
+                + (ciphertextLine.endsWith("0") ? "1" : "0");
+        Files.writeString(file, original.replace(ciphertextLine, flipped));
+        assertThrows(Exception.class, () -> Wallet.load(storage, "secure", PASSWORD), "Tampered ciphertext must be rejected");
+
+        Files.writeString(file, original.replace(wallet.getAddress(), newWallet().getAddress()));
+        assertThrows(Exception.class, () -> Wallet.load(storage, "secure", PASSWORD), "Tampered address must be rejected");
+
+        // The untouched file still loads.
+        Files.writeString(file, original);
+        assertEquals(wallet.getAddress(), Wallet.load(storage, "secure", PASSWORD).getAddress());
+    }
+
+    @Test
+    void testWalletStorageRejectsUnsafeIdsAndEmptyPasswords() throws Exception {
+        assertThrows(Exception.class, () -> wallet.save(storage, "../escape", PASSWORD));
+        assertThrows(Exception.class, () -> wallet.save(storage, "a/b", PASSWORD));
+        assertThrows(Exception.class, () -> wallet.save(storage, "ok", ""));
+        assertFalse(storage.walletExists("../escape"));
+        assertEquals(0, storage.listWallets().length);
+    }
+
+    @Test
+    void testWalletStorageListWallets() throws Exception {
+        for (int i = 0; i < 3; i++) {
+            newWallet().save(storage, "wallet-" + i, PASSWORD);
+        }
+        String[] wallets = storage.listWallets();
+        assertEquals(3, wallets.length, "Should list exactly the wallets that were saved");
+        assertEquals(java.util.List.of("wallet-0", "wallet-1", "wallet-2"), java.util.Arrays.asList(wallets));
+
+        storage.deleteWallet("wallet-1");
+        assertEquals(2, storage.listWallets().length);
+        assertThrows(Exception.class, () -> storage.deleteWallet("wallet-1"), "Deleting a missing wallet must fail");
+    }
+
+    @Test
+    void testWalletStorageKeepsBalanceCacheAndMetadataOnlyWallets() throws Exception {
+        WalletStorage.WalletData data = new WalletStorage.WalletData();
+        data.address = wallet.getAddress();
+        data.lastNonce = 7;
+        data.balances.put("TINC", BigInteger.valueOf(42));
+        storage.saveWallet("watch-only", data, PASSWORD);
+
+        WalletStorage.WalletData loaded = storage.loadWallet("watch-only", PASSWORD);
+        assertEquals(wallet.getAddress(), loaded.address);
+        assertEquals(7, loaded.lastNonce);
+        assertEquals(BigInteger.valueOf(42), loaded.balances.get("TINC"));
+        assertNull(loaded.privateKey, "A metadata-only wallet has no private key");
+        assertThrows(Exception.class, () -> storage.loadWallet("watch-only", "wrong"));
+        assertThrows(IllegalStateException.class, () -> Wallet.load(storage, "watch-only", PASSWORD));
+    }
+
+    // ------------------------------------------------------------------ helpers
+
+    private static Wallet newWallet() {
+        try {
+            return new Wallet();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static java.security.PrivateKey privateKeyOf(Wallet wallet) throws Exception {
+        java.lang.reflect.Field field = Wallet.class.getDeclaredField("keyPair");
+        field.setAccessible(true);
+        return ((KeyPair) field.get(wallet)).getPrivate();
     }
 }

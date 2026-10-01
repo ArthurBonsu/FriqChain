@@ -210,18 +210,25 @@ public class BaseTransactionTest {
     }
 
     @Test
-    @DisplayName("verifySignature should check signature validity")
-    void testVerifySignature() {
-        // Test with null signature
+    @DisplayName("verifySignature should only accept a real signature by the sender's key")
+    void testVerifySignature() throws Exception {
+        // Unsigned transactions never verify
         assertFalse(transaction.verifySignature());
 
-        // Test with valid signature
+        // A bare (mock) signature proves nothing: it must not authenticate the transaction.
+        // The previous placeholder implementation accepted any non-null signature, which let anyone
+        // forge a transaction from any address.
         SignatureResult signature = mock(SignatureResult.class);
         transaction.setSignature(signature);
+        assertFalse(transaction.verifySignature());
 
-        // Since we're testing a placeholder implementation, we're just checking
-        // that the method returns as expected when there's a non-null signature
-        assertTrue(transaction.verifySignature());
+        // A genuine signature by the key that owns the sender address verifies
+        java.security.KeyPair keys = org.example.app.core.crypto.Secp256k1.generateKeyPair();
+        Transaction signed = new Transaction(testData);
+        signed.setSender(org.example.app.core.crypto.Secp256k1.address(keys.getPublic()));
+        signed.setRecipient("0xrecipient456");
+        signed.sign(keys.getPrivate());
+        assertTrue(signed.verifySignature());
     }
 
     @Test

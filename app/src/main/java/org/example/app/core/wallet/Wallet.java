@@ -1,90 +1,207 @@
 package org.example.app.core.wallet;
 
-import java.security.*;
-import java.util.HashMap;
-import java.math.BigInteger;
 import org.example.app.core.block.Transaction;
+import org.example.app.core.crypto.Secp256k1;
 
-import java.security.spec.InvalidKeySpecException;
+import java.math.BigInteger;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.util.Arrays;
+import java.util.HashMap;
 
+/**
+ * A single-key account wallet. The address is derived from the secp256k1 public key
+ * ({@code 0x} + last 20 bytes of {@code keccak256(publicKey)}), so every wallet has a unique
+ * address, and every transaction the wallet creates carries a real ECDSA signature. The private key
+ * never leaves this object except into an encrypted {@link WalletStorage} file.
+ */
 public class Wallet {
+    private static final byte[] TRANSFER_SELECTOR = {(byte) 0xa9, 0x05, (byte) 0x9c, (byte) 0xbb}; // transfer(address,uint256)
+
     private final KeyPair keyPair;
+    private final String address;
     private final HashMap<String, Transaction> transactions;
     private long nonce;
     private long balance;
 
+    /** Creates a wallet with a freshly generated key. */
     public Wallet() throws NoSuchAlgorithmException {
-        // Generate key pair using standard Java cryptography
-        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC"); // Elliptic Curve
-        keyGen.initialize(256); // 256-bit key
-        this.keyPair = keyGen.generateKeyPair();
+        this(KeyUtils.generateKeyPair());
+    }
 
+    /** Wraps an existing secp256k1 key pair. */
+    public Wallet(KeyPair keyPair) {
+        if (keyPair == null) {
+            throw new IllegalArgumentException("Key pair must not be null");
+        }
+        this.keyPair = keyPair;
+        this.address = KeyUtils.getAddress(keyPair.getPublic());
         this.transactions = new HashMap<>();
         this.nonce = 0;
         this.balance = 0;
     }
 
-    public Transaction createTransaction(String to, long amount, long gasPrice) {
-        if (amount + gasPrice > balance) {
+    /** Restores a wallet from a 32-byte private key (for example one decrypted from a keystore). */
+    public static Wallet fromPrivateKey(byte[] privateKey32) {
+        return new Wallet(Secp256k1.keyPairFromPrivate(privateKey32));
+    }
+
+    // ------------------------------------------------------------------ persistence
+
+    /** Encrypts this wallet's private key under {@code password} and stores it. */
+    public void save(WalletStorage storage, String walletId, String password) throws Exception {
+        WalletStorage.WalletData data = new WalletStorage.WalletData();
+        data.address = address;
+        data.lastNonce = nonce;
+        data.privateKey = Secp256k1.toUnsigned32(Secp256k1.privateScalar(keyPair.getPrivate()));
+        try {
+            storage.saveWallet(walletId, data, password);
+        } finally {
+            Arrays.fill(data.privateKey, (byte) 0);
+        }
+    }
+
+    /** Loads a wallet previously written with {@link #save}. */
+    public static Wallet load(WalletStorage storage, String walletId, String password) throws Exception {
+        WalletStorage.WalletData data = storage.loadWallet(walletId, password);
+        if (data.privateKey == null) {
+            throw new IllegalStateException("Wallet '" + walletId + "' does not contain a private key");
+        }
+        try {
+            Wallet wallet = fromPrivateKey(data.privateKey);
+            wallet.nonce = data.lastNonce;
+            return wallet;
+        } finally {
+            Arrays.fill(data.privateKey, (byte) 0);
+        }
+    }
+
+    // ------------------------------------------------------------------ transactions
+
+    /**
+     * Creates and signs a value transfer. The nonce is consumed only when the transaction was
+     * created successfully.
+     *
+     * @throws IllegalStateException if the wallet's known balance cannot cover {@code amount + gasPrice}
+     */
+    public synchronized Transaction createTransaction(String to, long amount, long gasPrice) {
+        requireFunds(amount, gasPrice);
+        return buildAndRecord(to, BigInteger.valueOf(amount), new byte[0], gasPrice);
+    }
+
+    /** Creates and signs a contract call carrying {@code data}. */
+    public synchronized Transaction createContractTransaction(String contractAddress, byte[] data, long gasPrice) {
+        requireFunds(0, gasPrice);
+        return buildAndRecord(contractAddress, BigInteger.ZERO, data == null ? new byte[0] : data, gasPrice);
+    }
+
+    /** Creates a signed ERC-20 {@code transfer(to, amount)} call against {@code tokenAddress}. */
+    public Transaction createTokenTransferTransaction(String tokenAddress, String to, long amount, long gasPrice) {
+        return createTokenTransferTransaction(tokenAddress, to, BigInteger.valueOf(amount), gasPrice);
+    }
+
+    /** As above with a full 256-bit amount. */
+    public Transaction createTokenTransferTransaction(String tokenAddress, String to, BigInteger amount, long gasPrice) {
+        return createContractTransaction(tokenAddress, encodeTokenTransfer(to, amount), gasPrice);
+    }
+
+    private void requireFunds(long amount, long gasPrice) {
+        if (amount < 0 || gasPrice < 0) {
+            throw new IllegalArgumentException("Amount and gas price must not be negative");
+        }
+        long required;
+        try {
+            required = Math.addExact(amount, gasPrice);
+        } catch (ArithmeticException e) {
+            throw new IllegalArgumentException("Amount plus gas price overflows", e);
+        }
+        if (required > balance) {
             throw new IllegalStateException("Insufficient funds");
         }
+    }
 
-        // Use TransactionBuilder for creating transactions
-        TransactionBuilder builder = new TransactionBuilder();
-        Transaction tx = builder
-                .from(getAddress())
+    private Transaction buildAndRecord(String to, BigInteger value, byte[] data, long gasPrice) {
+        Transaction tx = new TransactionBuilder()
+                .from(address)
                 .to(to)
-                .value(BigInteger.valueOf(amount))
+                .value(value)
+                .data(data)
                 .gasPrice(BigInteger.valueOf(gasPrice))
-                .nonce(nonce++)
+                .nonce(nonce)
                 .privateKey(keyPair.getPrivate())
                 .build();
-
-        // Generate a unique hash for the transaction
-        String txHash = generateTransactionHash(tx);
-
-        // Store transaction with generated hash
-        transactions.put(txHash, tx);
+        nonce++; // only after the transaction exists
+        transactions.put(tx.getHash(), tx);
         return tx;
     }
 
-    // Method to generate a unique hash for the transaction
-    private String generateTransactionHash(Transaction tx) {
-        try {
-            // Use transaction's byte representation to generate a hash
-            byte[] txBytes = tx.toBytes();
-
-            // Use SHA-256 for hash generation
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(txBytes);
-
-            return bytesToHex(hashBytes);
-        } catch (Exception e) {
-            // Fallback to a unique identifier
-            return String.valueOf(System.currentTimeMillis());
+    /**
+     * ABI-encodes {@code transfer(address,uint256)}. The recipient must be a valid 20-byte hex
+     * address and the amount must fit in 256 bits; anything else is rejected rather than silently
+     * encoded as the zero address or truncated.
+     */
+    static byte[] encodeTokenTransfer(String to, BigInteger amount) {
+        if (to == null) {
+            throw new IllegalArgumentException("Recipient address is required");
         }
+        byte[] recipient = Secp256k1.fromHex(to);
+        if (recipient.length != 20) {
+            throw new IllegalArgumentException("Recipient must be a 20-byte address: " + to);
+        }
+        if (amount == null || amount.signum() < 0 || amount.bitLength() > 256) {
+            throw new IllegalArgumentException("Token amount must be between 0 and 2^256-1");
+        }
+        byte[] data = new byte[4 + 32 + 32];
+        System.arraycopy(TRANSFER_SELECTOR, 0, data, 0, 4);
+        System.arraycopy(recipient, 0, data, 4 + 12, 20);
+        byte[] amountBytes = amount.toByteArray();
+        int offset = amountBytes[0] == 0 && amountBytes.length > 1 ? 1 : 0; // drop the sign byte
+        int length = amountBytes.length - offset;
+        System.arraycopy(amountBytes, offset, data, 4 + 32 + (32 - length), length);
+        return data;
     }
 
-    // Helper method to convert byte array to hex string
-    private String bytesToHex(byte[] bytes) {
-        StringBuilder hexString = new StringBuilder(2 * bytes.length);
-        for (byte b : bytes) {
-            String hex = Integer.toHexString(0xff & b);
-            if (hex.length() == 1) hexString.append('0');
-            hexString.append(hex);
-        }
-        return hexString.toString();
-    }
+    // ------------------------------------------------------------------ accessors
 
+    /** Canonical address: {@code 0x} + 40 lowercase hex characters, unique per key. */
     public String getAddress() {
-        // Generate address from public key
-        // This is a simplified address generation
-        PublicKey publicKey = keyPair.getPublic();
-        byte[] publicKeyBytes = publicKey.getEncoded();
-        return bytesToHex(publicKeyBytes).substring(0, 40); // First 40 characters
+        return address;
     }
 
-    // Additional wallet methods
+    public PublicKey getPublicKey() {
+        return keyPair.getPublic();
+    }
+
+    /** The 64-byte secp256k1 public key ({@code X || Y}). */
+    public byte[] getPublicKeyBytes() {
+        return Secp256k1.rawPublicKey(keyPair.getPublic());
+    }
+
+    /** The nonce the next transaction created by this wallet will use. */
+    public synchronized long getNextNonce() {
+        return nonce;
+    }
+
+    /**
+     * Signs a transaction created elsewhere (for example by a contract helper). The sender is set
+     * to this wallet's address if empty, the next wallet nonce is assigned, and a real ECDSA
+     * signature is attached.
+     */
+    public synchronized Transaction sign(Transaction tx) {
+        if (tx == null) {
+            throw new IllegalArgumentException("Transaction must not be null");
+        }
+        if (tx.getSender() == null || tx.getSender().isEmpty()) {
+            tx.setSender(address);
+        }
+        tx.setNonce(nonce);
+        tx.sign(keyPair.getPrivate());
+        nonce++;
+        transactions.put(tx.getHash(), tx);
+        return tx;
+    }
+
     public void updateBalance(long newBalance) {
         this.balance = newBalance;
     }
@@ -93,73 +210,11 @@ public class Wallet {
         return balance;
     }
 
-    public HashMap<String, Transaction> getTransactions() {
+    public synchronized HashMap<String, Transaction> getTransactions() {
         return new HashMap<>(transactions);
     }
 
-    public Transaction getTransaction(String hash) {
+    public synchronized Transaction getTransaction(String hash) {
         return transactions.get(hash);
     }
-
-    // Add this to your Wallet.java class
-public Transaction createContractTransaction(String contractAddress, byte[] data, long gasPrice) {
-    Transaction tx = createTransaction(contractAddress, 0, gasPrice);
-    
-    // Create a new transaction with the data payload
-    Transaction dataTransaction = new Transaction(data);
-    dataTransaction.setRecipient(contractAddress);
-    dataTransaction.setSender(getAddress());
-    dataTransaction.setGasPrice(BigInteger.valueOf(gasPrice));
-    
-    // Copy any other necessary properties from the original transaction
-    
-    return dataTransaction;
-}
-
-// Add this to your Wallet.java class
-public Transaction createTokenTransferTransaction(String tokenAddress, String to, long amount, long gasPrice) {
-    byte[] data = createTokenTransferData(to, amount);
-    return createContractTransaction(tokenAddress, data, gasPrice);
-}
-
-private byte[] createTokenTransferData(String to, long amount) {
-    // Create the token transfer function call data
-    // Function signature: transfer(address,uint256)
-    byte[] data = new byte[4 + 32 + 32]; // 4 bytes function selector + 32 bytes address + 32 bytes amount
-    
-    // Function selector for transfer(address,uint256): 0xa9059cbb
-    data[0] = (byte) 0xa9;
-    data[1] = (byte) 0x05;
-    data[2] = (byte) 0x9c;
-    data[3] = (byte) 0xbb;
-    
-    // Encode recipient address (padded to 32 bytes)
-    byte[] addressBytes = hexStringToBytes(to);
-    if (addressBytes.length == 20) {
-        System.arraycopy(addressBytes, 0, data, 4 + 12, 20); // Pad left with zeros (12 bytes)
-    }
-    
-    // Encode amount (padded to 32 bytes)
-    for (int i = 0; i < 8; i++) { // Only using 8 bytes (long)
-        data[4 + 32 + 24 + i] = (byte) ((amount >> ((7 - i) * 8)) & 0xFF);
-    }
-    
-    return data;
-}
-
-private byte[] hexStringToBytes(String hexString) {
-    if (hexString.startsWith("0x")) {
-        hexString = hexString.substring(2);
-    }
-    
-    int len = hexString.length();
-    byte[] data = new byte[len / 2];
-    
-    for (int i = 0; i < len; i += 2) {
-        data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
-                            + Character.digit(hexString.charAt(i + 1), 16));
-    }
-    
-    return data;
-}
 }
